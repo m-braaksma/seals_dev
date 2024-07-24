@@ -49,8 +49,10 @@ def recompile_cython(env_name):
         # except:
         #     env_name_to_use = None
         env_name_to_use = None
-        if env_name_to_use is None:
+        if env_name is None:
             L.critical('You gave a cython environment for recompilation (' + env_name + '), but it does not exist.')
+        else:
+            env_name_to_use = env_name
         old_cwd = os.getcwd()
         script_dir = os.path.dirname(os.path.abspath(__file__))
         os.chdir(script_dir)
