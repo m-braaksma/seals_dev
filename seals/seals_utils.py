@@ -779,7 +779,10 @@ def set_derived_attributes(p):
         p.coarse_resolution_arcseconds = float(p.coarse_projections_input_path)
         p.coarse_resolution = hb.pyramid_compatible_resolutions[p.coarse_resolution_arcseconds]    
      
-        
+    p.fine_resolution_degrees = hb.pyramid_compatible_resolutions[p.fine_resolution_arcseconds]
+    p.coarse_resolution_degrees = hb.pyramid_compatible_resolutions[p.coarse_resolution_arcseconds]
+    p.fine_resolution = p.fine_resolution_degrees
+    p.coarse_resolution = p.coarse_resolution_degrees
     
        
     
@@ -826,6 +829,12 @@ def set_derived_attributes(p):
     p.all_class_indices = p.coarse_correspondence_class_indices + [i for i in p.lulc_correspondence_class_indices if i not in p.coarse_correspondence_class_indices] 
     p.all_class_labels = p.coarse_correspondence_class_labels + [i for i in p.lulc_correspondence_class_labels if i not in p.coarse_correspondence_class_labels]
     p.class_labels = p.all_class_labels
+    
+    # Check if processing_resolution exists
+    if not hasattr(p, 'processing_resolution'):
+        p.processing_resolution = 1.0
+    
+    p.processing_resolution_arcseconds = p.processing_resolution * 3600.0 # MUST BE FLOAT
             
 def download_google_cloud_blob(bucket_name, source_blob_name, credentials_path, destination_file_name, chunk_size=262144*5,):
     

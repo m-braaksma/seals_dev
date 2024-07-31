@@ -8,23 +8,33 @@ import hazelbean as hb
 import os, sys
 import hazelbean as hb
 from hazelbean import cloud_utils
+import pandas as pd
 
 import seals_main
+import seals_utils
 import seals_generate_base_data
 import seals_process_coarse_timeseries
 import seals_visualization_tasks
 import config
 from seals_utils import download_google_cloud_blob
+import seals_tasks
 
 
-def run(p):   
-    hb.log('Created ProjectFlow object at ' + p.project_dir + '\n    from script ' + p.calling_script + '\n    with base_data set at ' + p.base_data_dir)
-       
-    # initialize and set all basic variables. Sadly this is still needed even for a SEALS run until it's extracted.
-    # p.combined_block_lists_paths = None # This will be smartly determined in either calibration or allocation
+def set_advanced_options(p):       
+    
+    p.build_overviews_and_stats = 0  # For later fast-viewing, this can be enabled to write ovr files and geotiff stats files. NYI anywhere.
+    p.force_to_global_bb = 0
+    p.plotting_level = 0 
 
+    p.cython_reporting_level = 0
+    p.calibration_cython_reporting_level = 0
+    p.output_writing_level = 0  # >=2 writes chunk-baseline lulc
+    p.write_projected_coarse_change_chunks = 0  # in the SEALS allocation, for troubleshooting, it can be useful to see what was the coarse allocation input.
+    p.write_calibration_generation_arrays = 0  # in the SEALS allocation, for troubleshooting, it can be useful to see what was the coarse allocation input.
 
-    ###--------------- Additional options (could make advanced options in the UI eventually) ----------------
+    p.years_to_convolve_override = None # Because convolving a lulc map is so computationally expensive, you may set this option to manually set which year of convolutions to use. If this is None (the default), it will convolve the base year.
+
+    p.num_workers = None  # None sets it to max available. Otherwise, set to an integer.
 
     # Determine if overviews should be written.
     p.write_global_lulc_overviews_and_tifs = True    
@@ -70,190 +80,72 @@ def run(p):
         p.subset_of_blocks_to_run = None # No subset
 
 
+def validate_scenario_definitions(p):
+    
+    # If the scenarios csv doesn't exist, generate it and put it in the input_dir 
+    if not hb.path_exists(p.scenario_definitions_path):
+        
+        # Before generating a new scenarios file, check if there's not one in the base data with the matching name.
+        possible_path = p.get_path('seals', 'default_inputs', p.scenario_definitions_filename)
+        if hb.path_exists(possible_path):
+            hb.path_copy(possible_path, p.scenario_definitions_path)
+            
+        # If theres truly nothing in the base data, generate it for the default.
+        else:        
+            # There are multiple scenario_csv generator functions. Here we use the default.
+            seals_utils.set_attributes_to_dynamic_default(p) # Default option
+
+            # Once the attributes are set, generate the scenarios csv and put it in the input_dir.
+            seals_utils.generate_scenarios_csv_and_put_in_input_dir(p)
+        
+        # After writing, read it it back in, cause this is how other attributes might be modified
+        p.scenarios_df = pd.read_csv(p.scenario_definitions_path)
+    else:
+        # Read in the scenarios csv and assign the first row to the attributes of this object (in order to setup additional 
+        # project attributes like the resolutions of the fine scale and coarse scale data)
+        p.scenarios_df = pd.read_csv(p.scenario_definitions_path)
+
+    # Set p attributes from df (but only the first row, cause its for initialization)
+    for index, row in p.scenarios_df.iterrows():
+        
+        # NOTE! This also downloads any files references in the csv
+        seals_utils.assign_df_row_to_object_attributes(p, row)
+        break # Just get first for initialization.
+
+    # calibration_parameters_override_dict can be used in specific scenarios to e.g., not allow expansion of cropland into forest by overwriting the default calibration. Note that I haven't set exactly how this
+    # will work if it is specific to certain zones or a single-zone that overrides all. The latter would probably be easier.
+    # If the DF has a value, override. If it is None or "", keep from parameters source.
+    p.calibration_parameters_override_dict = {}
+    # p.calibration_parameters_override_dict['rcp45_ssp2'][2030]['BAU'] = os.path.join(p.input_dir, 'calibration_overrides', 'prevent_cropland_expansion_into_forest.xlsx')
 
     
-    p.execute()
-
-
+    
+    # Some variables need further processing into attributes, like parsing a correspondence csv into a dict.
+    seals_utils.set_derived_attributes(p)
 
 def initialize_paths(p):
-    # To easily convert between per-ha and per-cell terms, these very accurate ha_per_cell maps are defined.
-    p.ha_per_cell_10sec_ref_path = os.path.join('pyramids', "ha_per_cell_10sec.tif")
-    p.ha_per_cell_300sec_ref_path = os.path.join('pyramids', "ha_per_cell_300sec.tif")
-    p.ha_per_cell_900sec_ref_path = os.path.join('pyramids', "ha_per_cell_900sec.tif")
-    p.ha_per_cell_1800sec_ref_path = os.path.join('pyramids', "ha_per_cell_1800sec.tif")
-    p.ha_per_cell_3600sec_ref_path = os.path.join('pyramids', "ha_per_cell_3600sec.tif")
+    5
 
-
-    p.ha_per_cell_ref_paths = {}
-    p.ha_per_cell_ref_paths[10.0] = p.ha_per_cell_10sec_ref_path
-    p.ha_per_cell_ref_paths[300.0] = p.ha_per_cell_300sec_ref_path
-    p.ha_per_cell_ref_paths[900.0] = p.ha_per_cell_900sec_ref_path
-    p.ha_per_cell_ref_paths[1800.0] = p.ha_per_cell_1800sec_ref_path
-    p.ha_per_cell_ref_paths[3600.0] = p.ha_per_cell_3600sec_ref_path
-
-    # To easily convert between per-ha and per-cell terms, these very accurate ha_per_cell maps are defined.
-    p.ha_per_cell_10sec_path = os.path.join(p.base_data_dir, 'pyramids', "ha_per_cell_10sec.tif")
-    p.ha_per_cell_300sec_path = os.path.join(p.base_data_dir, 'pyramids', "ha_per_cell_300sec.tif")
-    p.ha_per_cell_900sec_path = os.path.join(p.base_data_dir, 'pyramids', "ha_per_cell_900sec.tif")
-    p.ha_per_cell_1800sec_path = os.path.join(p.base_data_dir, 'pyramids', "ha_per_cell_1800sec.tif")
-    p.ha_per_cell_3600sec_path = os.path.join(p.base_data_dir, 'pyramids', "ha_per_cell_3600sec.tif")
-
-    p.ha_per_cell_paths = {}
-    p.ha_per_cell_paths[10.0] = p.ha_per_cell_10sec_path
-    p.ha_per_cell_paths[300.0] = p.ha_per_cell_300sec_path
-    p.ha_per_cell_paths[900.0] = p.ha_per_cell_900sec_path
-    p.ha_per_cell_paths[1800.0] = p.ha_per_cell_1800sec_path
-    p.ha_per_cell_paths[3600.0] = p.ha_per_cell_3600sec_path
-
-    # The ha per cell paths also can be used when writing new tifs as the match path.
-    p.match_10sec_path = p.ha_per_cell_10sec_path
-    p.match_300sec_path = p.ha_per_cell_300sec_path
-    p.match_900sec_path = p.ha_per_cell_900sec_path
-    p.match_1800sec_path = p.ha_per_cell_1800sec_path
-    p.match_3600sec_path = p.ha_per_cell_3600sec_path
-
-    p.match_paths = {}
-    p.match_paths[10.0] = p.match_10sec_path
-    p.match_paths[300.0] = p.match_300sec_path
-    p.match_paths[900.0] = p.match_900sec_path
-    p.match_paths[1800.0] = p.match_1800sec_path
-    p.match_paths[3600.0] = p.match_3600sec_path
-
-    p.ha_per_cell_column_10sec_path = os.path.join(p.base_data_dir, 'pyramids', "ha_per_cell_column_10sec.tif")
-    p.ha_per_cell_column_300sec_path = os.path.join(p.base_data_dir, 'pyramids', "ha_per_cell_column_300sec.tif")
-    p.ha_per_cell_column_900sec_path = os.path.join(p.base_data_dir, 'pyramids', "ha_per_cell_column_900sec.tif")
-    p.ha_per_cell_column_1800sec_path = os.path.join(p.base_data_dir, 'pyramids', "ha_per_cell_column_1800sec.tif")
-    p.ha_per_cell_column_3600sec_path = os.path.join(p.base_data_dir, 'pyramids', "ha_per_cell_column_3600sec.tif")
-
-    # If you're willing to assume the world is a sphere, it's faster to just load the columns
-    p.ha_per_cell_column_paths = {}
-    p.ha_per_cell_column_paths[10.0] = p.ha_per_cell_column_10sec_path
-    p.ha_per_cell_column_paths[300.0] = p.ha_per_cell_column_300sec_path
-    p.ha_per_cell_column_paths[900.0] = p.ha_per_cell_column_900sec_path
-    p.ha_per_cell_column_paths[1800.0] = p.ha_per_cell_column_1800sec_path
-    p.ha_per_cell_column_paths[3600.0] = p.ha_per_cell_column_3600sec_path
-
-    ### ------------------- Build paths to download ------------------- ###
-    p.static_regressor_paths = {}
-    p.static_regressor_paths['sand_percent'] = os.path.join(p.base_data_dir, 'seals', 'static_regressors', 'sand_percent.tif')
-    p.static_regressor_paths['silt_percent'] = os.path.join(p.base_data_dir, 'seals', 'static_regressors', 'silt_percent.tif')
-    p.static_regressor_paths['soil_bulk_density'] = os.path.join(p.base_data_dir, 'seals', 'static_regressors', 'soil_bulk_density.tif')
-    p.static_regressor_paths['soil_cec'] = os.path.join(p.base_data_dir, 'seals', 'static_regressors', 'soil_cec.tif')
-    p.static_regressor_paths['soil_organic_content'] = os.path.join(p.base_data_dir, 'seals', 'static_regressors', 'soil_organic_content.tif')
-    p.static_regressor_paths['strict_pa'] = os.path.join(p.base_data_dir, 'seals', 'static_regressors', 'strict_pa.tif')
-    p.static_regressor_paths['temperature_c'] = os.path.join(p.base_data_dir, 'seals', 'static_regressors', 'temperature_c.tif')
-    p.static_regressor_paths['travel_time_to_market_mins'] = os.path.join(p.base_data_dir, 'seals', 'static_regressors', 'travel_time_to_market_mins.tif')
-    p.static_regressor_paths['wetlands_binary'] = os.path.join(p.base_data_dir, 'seals', 'static_regressors', 'wetlands_binary.tif')
-    p.static_regressor_paths['alt_m'] = os.path.join(p.base_data_dir, 'seals', 'static_regressors', 'alt_m.tif')
-    p.static_regressor_paths['carbon_above_ground_mg_per_ha_global'] = os.path.join(p.base_data_dir, 'seals', 'static_regressors', 'carbon_above_ground_mg_per_ha_global.tif')
-    p.static_regressor_paths['clay_percent'] = os.path.join(p.base_data_dir, 'seals', 'static_regressors', 'clay_percent.tif')
-    p.static_regressor_paths['ph'] = os.path.join(p.base_data_dir, 'seals', 'static_regressors', 'ph.tif')
-    p.static_regressor_paths['pop'] = os.path.join(p.base_data_dir, 'seals', 'static_regressors', 'pop.tif')
-    p.static_regressor_paths['precip_mm'] = os.path.join(p.base_data_dir, 'seals', 'static_regressors', 'precip_mm.tif')
+    # ### ------------------- Build paths to download ------------------- ###
+    # p.static_regressor_paths = {}
+    # p.static_regressor_paths['sand_percent'] = os.path.join(p.base_data_dir, 'seals', 'static_regressors', 'sand_percent.tif')
+    # p.static_regressor_paths['silt_percent'] = os.path.join(p.base_data_dir, 'seals', 'static_regressors', 'silt_percent.tif')
+    # p.static_regressor_paths['soil_bulk_density'] = os.path.join(p.base_data_dir, 'seals', 'static_regressors', 'soil_bulk_density.tif')
+    # p.static_regressor_paths['soil_cec'] = os.path.join(p.base_data_dir, 'seals', 'static_regressors', 'soil_cec.tif')
+    # p.static_regressor_paths['soil_organic_content'] = os.path.join(p.base_data_dir, 'seals', 'static_regressors', 'soil_organic_content.tif')
+    # p.static_regressor_paths['strict_pa'] = os.path.join(p.base_data_dir, 'seals', 'static_regressors', 'strict_pa.tif')
+    # p.static_regressor_paths['temperature_c'] = os.path.join(p.base_data_dir, 'seals', 'static_regressors', 'temperature_c.tif')
+    # p.static_regressor_paths['travel_time_to_market_mins'] = os.path.join(p.base_data_dir, 'seals', 'static_regressors', 'travel_time_to_market_mins.tif')
+    # p.static_regressor_paths['wetlands_binary'] = os.path.join(p.base_data_dir, 'seals', 'static_regressors', 'wetlands_binary.tif')
+    # p.static_regressor_paths['alt_m'] = os.path.join(p.base_data_dir, 'seals', 'static_regressors', 'alt_m.tif')
+    # p.static_regressor_paths['carbon_above_ground_mg_per_ha_global'] = os.path.join(p.base_data_dir, 'seals', 'static_regressors', 'carbon_above_ground_mg_per_ha_global.tif')
+    # p.static_regressor_paths['clay_percent'] = os.path.join(p.base_data_dir, 'seals', 'static_regressors', 'clay_percent.tif')
+    # p.static_regressor_paths['ph'] = os.path.join(p.base_data_dir, 'seals', 'static_regressors', 'ph.tif')
+    # p.static_regressor_paths['pop'] = os.path.join(p.base_data_dir, 'seals', 'static_regressors', 'pop.tif')
+    # p.static_regressor_paths['precip_mm'] = os.path.join(p.base_data_dir, 'seals', 'static_regressors', 'precip_mm.tif')
 
 
 
-    p.fine_resolution_degrees = hb.pyramid_compatible_resolutions[p.fine_resolution_arcseconds]
-    p.coarse_resolution_degrees = hb.pyramid_compatible_resolutions[p.coarse_resolution_arcseconds]
-    p.fine_resolution = p.fine_resolution_degrees
-    p.coarse_resolution = p.coarse_resolution_degrees
-
-    p.fine_ha_per_cell_path = p.ha_per_cell_paths[p.fine_resolution_arcseconds]
-    p.fine_match_path = p.fine_ha_per_cell_path
-
-    p.coarse_ha_per_cell_path = p.ha_per_cell_paths[p.coarse_resolution_arcseconds]
-    p.coarse_match_path = p.coarse_ha_per_cell_path
-
-
-
-
-def project_aoi(p):
-    """
-    Generate the area of interest (AOI) of the current project based on the inputs defined in the run file.
-
-    This task must be run first because it defines how all subsequent data will be extracted (based on the bounding box of the AOI)
-
-    """ 
-    download_urls = {}   
-    # download_urls[p.countries_iso3_path] = p.countries_iso3_path.split(p.base_data_dir)[1].replace('\\', '/')
-    # download_urls[p.ha_per_cell_paths[p.fine_resolution_arcseconds]] = p.ha_per_cell_paths[p.fine_resolution_arcseconds].split(p.base_data_dir)[1].replace('\\', '/')
-    # download_urls[p.ha_per_cell_paths[p.coarse_resolution_arcseconds]] = p.ha_per_cell_paths[p.coarse_resolution_arcseconds].split(p.base_data_dir)[1].replace('\\', '/')
-    p.countries_iso3_path
-    p.countries_iso3_path = p.get_path(p.countries_iso3_path)
-    p.ha_per_cell_coarse_path = p.get_path(p.ha_per_cell_ref_paths[p.coarse_resolution_arcseconds])
-    p.ha_per_cell_fine_path = p.get_path(p.ha_per_cell_ref_paths[p.fine_resolution_arcseconds])
-    
-    # TODO This references something in initialize_project in seals. But, we only download the ones that are needed given the resolutions
-    # p.ha_per_cell_paths[p.fine_resolution_arcseconds] = p.get_path(p.ha_per_cell_paths[p.fine_resolution_arcseconds])
- 
-    # for download_path, download_url in download_urls.items():
-    #     if not hb.path_exists(download_path): # Check one last time to ensure that it wasn't added twice.
-    #         cloud_utils.download_google_cloud_blob(p.input_bucket_name, download_url, p.data_credentials_path, download_path)
-    
-    
-    # Note that here there is a little bit more logic outside the run_this block. But it only references the things that it assumes had been made sometime else.
-    if isinstance(p.aoi, str):
-        if p.aoi == 'global':
-            p.aoi_path = p.countries_iso3_path
-            p.aoi_label = 'global'
-            p.bb_exact = hb.global_bounding_box
-            p.bb = p.bb_exact
-
-            ### TODO TODOOO. aoi_ha... is the clipped, but still need to have the global one seperate so it can download it.
-            p.aoi_ha_per_cell_coarse_path = p.get_path(p.ha_per_cell_ref_paths[p.coarse_resolution_arcseconds])
-            p.aoi_ha_per_cell_fine_path = p.get_path(p.ha_per_cell_ref_paths[p.fine_resolution_arcseconds])
-        
-        elif isinstance(p.aoi, str):
-            if len(p.aoi) == 3: # Then it might be an ISO3 code. For now, assume so.
-                p.aoi_path = os.path.join(p.cur_dir, 'aoi_' + str(p.aoi) + '.gpkg')
-                p.aoi_label = p.aoi
-            else: # Then it's a path to a shapefile.
-                p.aoi_path = p.aoi
-                p.aoi_label = os.path.splitext(os.path.basename(p.aoi))[0]
-
-            for current_aoi_path in hb.list_filtered_paths_nonrecursively(p.cur_dir, include_strings='aoi'):
-                if current_aoi_path != p.aoi_path:
-                    raise NameError('There is more than one AOI in the current directory. This means you are trying to run a project in a new area of interst in a project that was already run in a different area of interest. This is not allowed! You probably want to create a new project directory and set the p = hb.ProjectFlow(...) line to point to the new directory.')
-                
-
-            if not hb.path_exists(p.aoi_path):
-                hb.extract_features_in_shapefile_by_attribute(p.countries_iso3_path, p.aoi_path, 'iso3', p.aoi.upper())
-            p.bb_exact = hb.spatial_projection.get_bounding_box(p.aoi_path)
-            p.bb = hb.pyramids.get_pyramid_compatible_bb_from_vector_and_resolution(p.aoi_path, p.processing_resolution_arcseconds)
-            p.aoi_ha_per_cell_fine_path = os.path.join(p.cur_dir, 'pyramids', 'aoi_ha_per_cell_fine.tif')
-            p.aoi_ha_per_cell_coarse_path = os.path.join(p.cur_dir, 'pyramids', 'aoi_ha_per_cell_coarse.tif')
-        else:
-            p.bb_exact = hb.spatial_projection.get_bounding_box(p.aoi_path)
-            p.bb = hb.pyramids.get_pyramid_compatible_bb_from_vector_and_resolution(p.aoi_path, p.processing_resolution_arcseconds)
-            p.aoi_ha_per_cell_fine_path = os.path.join(p.cur_dir, 'pyramids', 'aoi_ha_per_cell_fine.tif')
-            p.aoi_ha_per_cell_coarse_path = os.path.join(p.cur_dir, 'pyramids', 'aoi_ha_per_cell_coarse.tif')
-    else:
-        raise NameError('Unable to interpret p.aoi.')
-
-
-    if p.run_this:
-
-        if isinstance(p.aoi, str):
-
-            if p.aoi == 'global':
-                pass
-
-            elif isinstance(p.aoi, str):
-                if len(p.aoi) == 3:                     
-                    pass
-                else:
-                    pass
-
-                if not hb.path_exists(p.aoi_ha_per_cell_fine_path):
-                    hb.create_directories(p.aoi_ha_per_cell_fine_path)
-                    hb.clip_raster_by_bb(p.ha_per_cell_paths[p.fine_resolution_arcseconds], p.bb, p.aoi_ha_per_cell_fine_path)
-
-                if not hb.path_exists(p.aoi_ha_per_cell_coarse_path):
-                    hb.clip_raster_by_bb(p.ha_per_cell_paths[p.coarse_resolution_arcseconds], p.bb, p.aoi_ha_per_cell_coarse_path)
-
-        else:
-            raise NameError('Unable to interpret p.aoi.')
 
 def build_task_tree_by_name(p, task_tree_name):
     full_task_tree_name = 'build_' + task_tree_name + '_task_tree'
@@ -792,7 +684,7 @@ def build_standard_run_task_tree_BORK(p):
 def build_standard_run_task_tree(p):
 
     # Define the project AOI
-    p.project_aoi_task = p.add_task(project_aoi)
+    p.project_aoi_task = p.add_task(seals_tasks.project_aoi)
 
     ##### FINE PROCESSED INPUTS #####    
     p.fine_processed_inputs_task = p.add_task(seals_generate_base_data.fine_processed_inputs)

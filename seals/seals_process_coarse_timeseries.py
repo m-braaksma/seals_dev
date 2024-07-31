@@ -635,10 +635,10 @@ def coarse_simplified_ha_difference_from_base_year(p):
                         
             cell_size = hb.get_cell_size_from_path(os.path.join(p.base_data_dir, p.coarse_projections_input_path))
             
-            correct_global_ha_per_cell_path = p.ha_per_cell_paths[cell_size * 3600.0] 
-            correct_aoi_ha_per_cell_path = os.path.join(p.intermediate_dir, 'project_aoi', 'pyramids', 'aoi_ha_per_cell_' + str(int(cell_size * 3600.0)) + '.tif')
-            hb.clip_raster_by_bb(correct_global_ha_per_cell_path, p.bb, correct_aoi_ha_per_cell_path)
-            ha_per_cell_array = hb.as_array(correct_aoi_ha_per_cell_path)
+            # correct_global_ha_per_cell_path = p.ha_per_cell_paths[cell_size * 3600.0] 
+            # correct_aoi_ha_per_cell_path = os.path.join(p.intermediate_dir, 'project_aoi', 'pyramids', 'aoi_ha_per_cell_' + str(int(cell_size * 3600.0)) + '.tif')
+            # hb.clip_raster_by_bb(correct_global_ha_per_cell_path, p.bb, correct_aoi_ha_per_cell_path)
+            ha_per_cell_array = hb.as_array(p.aoi_ha_per_cell_coarse_path)
             
 
             if p.scenario_type != 'baseline':
@@ -690,7 +690,7 @@ def coarse_simplified_ha_difference_from_base_year(p):
                                 raise NameError('input_array.shape != base_year_array.shape: ' + str(input_array.shape) + ' != ' + str(base_year_array.shape) + '. This means that the coarse definition of the scenario that you are subtracting from the coarse definition of the baseline is mixing resolutions. You probably want to resample one of the two layers first.') 
                             current_array = (input_array - base_year_array) * ha_per_cell_array
 
-                            hb.save_array_as_geotiff(current_array, dst_path, correct_aoi_ha_per_cell_path)
+                            hb.save_array_as_geotiff(current_array, dst_path, p.aoi_ha_per_cell_coarse_path)
                     
 
 
@@ -711,10 +711,10 @@ def coarse_simplified_ha_difference_from_previous_year(p):
                         
             cell_size = hb.get_cell_size_from_path(p.ha_per_cell_coarse_path)
             
-            correct_global_ha_per_cell_path = p.ha_per_cell_paths[cell_size * 3600.0] 
-            correct_aoi_ha_per_cell_path = os.path.join(p.intermediate_dir, 'project_aoi', 'pyramids', 'aoi_ha_per_cell_' + str(int(cell_size * 3600.0)) + '.tif')
-            hb.clip_raster_by_bb(correct_global_ha_per_cell_path, p.bb, correct_aoi_ha_per_cell_path)
-            ha_per_cell_array = hb.as_array(correct_aoi_ha_per_cell_path)
+            # correct_global_ha_per_cell_path = p.ha_per_cell_coarse_path
+            correct_aoi_ha_per_cell_path = os.path.join(p.intermediate_dir, 'project_aoi', 'pyramids', 'aoi_ha_per_cell_' + str(int(cell_size * 3600.0)) + 'sec.tif')
+            # hb.clip_raster_by_bb(correct_global_ha_per_cell_path, p.bb, correct_aoi_ha_per_cell_path)
+            ha_per_cell_array = hb.as_array(p.aoi_ha_per_cell_coarse_path)
             
 
             
@@ -789,7 +789,7 @@ def coarse_simplified_ha_difference_from_previous_year(p):
                                 raise NameError('ending_year_array.shape != starting_year_array.shape: ' + str(ending_year_array.shape) + ' != ' + str(starting_year_array.shape) + '. This means that the coarse definition of the scenario that you are subtracting from the coarse definition of the baseline is mixing resolutions. You probably want to resample one of the two layers first.') 
                             current_array = (ending_year_array - starting_year_array) * ha_per_cell_array
 
-                            hb.save_array_as_geotiff(current_array, current_ending_year_dst_path, correct_aoi_ha_per_cell_path)
+                            hb.save_array_as_geotiff(current_array, current_ending_year_dst_path, p.aoi_ha_per_cell_coarse_path)
 
                         previous_year = year
                     
