@@ -58,8 +58,7 @@ if __name__ == '__main__':
 
     # Set processing resolution: determines how large of a chunk should be processed at a time. 4 deg is about max for 64gb memory systems
     p.processing_resolution = 1.0 # In degrees. Must be in pyramid_compatible_resolutions
-    
-    seals_initialize_project.initialize_paths(p)
+
     seals_initialize_project.set_advanced_options(p)
     
     p.L = hb.get_logger('test_run_seals')
