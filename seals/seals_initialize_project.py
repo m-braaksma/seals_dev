@@ -80,7 +80,7 @@ def set_advanced_options(p):
         p.subset_of_blocks_to_run = None # No subset
 
 
-def validate_scenario_definitions(p):
+def initialize_scenario_definitions(p):
     
     # If the scenarios csv doesn't exist, generate it and put it in the input_dir 
     if not hb.path_exists(p.scenario_definitions_path):

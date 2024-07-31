@@ -50,7 +50,7 @@ if __name__ == '__main__':
     # and then edit the scenario_definitions.csv to your project needs.   
     p.scenario_definitions_filename = 'test_standard_scenarios.csv' 
     p.scenario_definitions_path = os.path.join(p.input_dir, p.scenario_definitions_filename)
-    seals_initialize_project.validate_scenario_definitions(p)
+    seals_initialize_project.initialize_scenario_definitions(p)
         
     # SEALS is based on an extremely comprehensive region classification system defined in the following geopackage.
     global_regions_vector_ref_path = os.path.join('cartographic', 'ee', 'ee_r264_correspondence.gpkg')
