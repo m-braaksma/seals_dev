@@ -698,6 +698,7 @@ def assign_df_row_to_object_attributes(input_object, input_row):
     # First check if is numeric
     # Then check if has extension, is path
     for attribute_name, attribute_value in list(zip(input_row.index, input_row.values)):
+  
         try: 
             float(attribute_value)
             is_floatable = True

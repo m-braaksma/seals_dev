@@ -68,12 +68,9 @@ def regional_change(p):
                                 hb.save_array_as_geotiff(regional_coarsified_raster, output_path, local_path)
                         else:
                             "no need to shift it then."
-                    
-                    
-                
-            
-            
-    pass
+                else:
+                    hb.log('No regional change listed, so not shifting regions.')    
+
 
 def coarse_change(p):
     # Just to create folder
