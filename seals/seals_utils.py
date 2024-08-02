@@ -560,137 +560,16 @@ def calculate_carbon_naively(luh_ag_expansion_ha_path,
     return carbon_per_cell_after_loss, carbon_per_ha_upscaled, carbon_per_cell_fine
 
 
-def generate_nested_dict_from_scenario_lists(ssps, rcps, policies):
-    d = {}
 
-    for i in ssps:
-        d[i] = {}
-
-        for j in rcps:
-
-
-            d[i][j] = {}
-
-            for k in policies:
-                d[i][j][k] = {}
-
-    return d
-
-def generate_nested_dict_from_scenario_pairing_labels_list(scenario_pairing_labels):
-    d = {}
-
-    for i in scenario_pairing_labels:
-        s = i.split('_')
-        if len(s) > 0:
-            d[s[0]] = {}
-        
-        if len(s) > 1:
-            d[s[0]][s[1]] = {}
-
-        if len(s) > 2:
-            d[s[0]][s[1]][s[2]] = {}
-
-        if len(s) > 3:
-            d[s[0]][s[1]][s[2]][s[3]] = {}
-
-    return d
-
-def scenarios_input_to_dicts(scenario_definitions_path):
-    """Parse a seals input scenarios spreadsheet into python dictionaries ready for attaching to the ProjectFlow object"""
-    base_year_coarse_state_paths = {}    
-    scenario_coarse_state_paths = {}
-    iterator_lists_dict = {}    
-    
-
-    df = pd.read_csv(scenario_definitions_path)
-    
-    uniques = {col_name: df[col_name].dropna().unique() for col_name in df.columns}
-
-    exogenous_labels = []
-    climate_labels = []
-    model_labels = []
-    counterfactual_labels = []
-    baseline_years = []
-    scenario_years = []
-    
-    
-    
-    for index, row in df.iterrows():
-
-        exogenous_label = row['exogenous_label']
-        climate_label = row['climate_label']
-        model_label = row['model_label']
-        counterfactual_label = row['counterfactual_label']
-        years = str(row['years']).replace(' ', '').split(',')
-
-        coarse_projections_input_path = row['coarse_projections_input_path']
-        scenario_type = row['scenario_type']
-
-        if exogenous_label not in exogenous_labels:
-            exogenous_labels.append(exogenous_label)
-        if climate_label not in climate_labels:
-            climate_labels.append(climate_label)
-        if model_label not in model_labels:
-            model_labels.append(model_label)
-        if counterfactual_label not in counterfactual_labels:
-            counterfactual_labels.append(counterfactual_label)
-      
-        if scenario_type == 'baseline':
-            if exogenous_label not in base_year_coarse_state_paths:
-                base_year_coarse_state_paths[exogenous_label] = {}
-
-            if model_label not in base_year_coarse_state_paths[exogenous_label]:
-                base_year_coarse_state_paths[exogenous_label][model_label] = {}
-            for year in years:  
-                if year not in base_year_coarse_state_paths[exogenous_label][model_label]:
-                    base_year_coarse_state_paths[exogenous_label][model_label][year] = {}
-                    if year not in baseline_years:
-                        baseline_years.append(year)
-            
-            base_year_coarse_state_paths[exogenous_label][model_label][year] = coarse_projections_input_path
-
-        if scenario_type == 'bau' or scenario_type == 'policy':
-            if exogenous_label not in scenario_coarse_state_paths:
-                scenario_coarse_state_paths[exogenous_label] = {}
-            if climate_label not in scenario_coarse_state_paths[exogenous_label]:
-                scenario_coarse_state_paths[exogenous_label][climate_label] = {}            
-            if model_label not in scenario_coarse_state_paths[exogenous_label][climate_label]:
-                scenario_coarse_state_paths[exogenous_label][climate_label][model_label] = {}
-            if counterfactual_label not in scenario_coarse_state_paths[exogenous_label][climate_label][model_label]:
-                scenario_coarse_state_paths[exogenous_label][climate_label][model_label][counterfactual_label] = {}
-            for year in years:
-                if year not in scenario_coarse_state_paths[exogenous_label][climate_label][model_label][counterfactual_label]:
-                    scenario_coarse_state_paths[exogenous_label][climate_label][model_label][counterfactual_label][year] = {}
-                    if year not in scenario_years:
-                        scenario_years.append(year)
-            
-            scenario_coarse_state_paths[exogenous_label][climate_label][model_label][counterfactual_label][year] = coarse_projections_input_path
-
-
-
-
-
-    exogenous_labels = [i for i in exogenous_labels if str(i) != 'nan']
-    climate_labels = [i for i in climate_labels if str(i) != 'nan']
-    model_labels = [i for i in model_labels if str(i) != 'nan']
-    counterfactual_labels = [i for i in counterfactual_labels if str(i) != 'nan']
-    baseline_years = [i for i in baseline_years if str(i) != 'nan']
-    scenario_years = [i for i in scenario_years if str(i) != 'nan']
-
-    iterator_lists_dict['exogenous_labels'] = exogenous_labels
-    iterator_lists_dict['climate_labels'] = climate_labels
-    iterator_lists_dict['model_labels'] = model_labels
-    iterator_lists_dict['counterfactual_labels'] = counterfactual_labels
-    iterator_lists_dict['baseline_years'] = baseline_years
-    iterator_lists_dict['scenario_years'] = scenario_years
-
-    return base_year_coarse_state_paths, scenario_coarse_state_paths, iterator_lists_dict
 
 def assign_defaults_from_model_spec(input_object, model_spec_dict):
+    
+    # Next version will be replaced by seals_model_spec version.
     
     for k, v in model_spec_dict.items():
         if not hasattr(input_object, k):
             setattr(input_object, k, v)
+
             
 def assign_df_row_to_object_attributes(input_object, input_row):
     # srtip() 
