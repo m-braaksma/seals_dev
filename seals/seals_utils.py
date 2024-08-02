@@ -59,7 +59,7 @@ def recompile_cython(env_name):
 
         cython_command = "python compile_cython_functions.py build_ext -i clean"
         if env_name_to_use:
-            cython_command = "conda activate " + env_name_to_use + " && " + cython_command
+            # cython_command = "conda activate " + env_name_to_use + " && " + cython_command
             process = subprocess.Popen(cython_command, shell=True, stdout=subprocess.PIPE)
             output, err = process.communicate()
             if err:
@@ -67,6 +67,7 @@ def recompile_cython(env_name):
 
             # returned = os.system(cython_command)
         else:
+            cython_command = "conda activate " + env_name_to_use + " && " + cython_command
             process = subprocess.Popen(cython_command, shell=True, stdout=subprocess.PIPE)
             output, err = process.communicate()
             if err:

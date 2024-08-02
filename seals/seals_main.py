@@ -45,8 +45,9 @@ except ImportError:
 
 L = hb.get_logger()
 
-
-env_name = sys.executable.split(os.sep)[-2]
+# Get the environment name, which is the name of the directory containing the 'bin' directory
+env_name = os.path.basename(os.path.dirname(os.path.dirname(sys.executable)))
+# env_name = sys.executable.split(os.sep)[-2]
 
 import seals_utils
 if env_name is not None:
