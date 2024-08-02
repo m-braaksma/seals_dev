@@ -1,21 +1,17 @@
-
-
-
+import os
+import hazelbean as hb
+import pandas as pd
 
 
 def assign_defaults_from_model_spec(input_object, model_spec_dict):
-    
+    # Helper function that takes an input object, like a ProjectFlow p variable
+    # and a dictionary of default values. If the attribute is not already set, it will
+    # set the attribute to the default value.    
     for k, v in model_spec_dict.items():
         if not hasattr(input_object, k):
             setattr(input_object, k, v)
             
-            
-            
-            
-            
-            
-            
-
+# Make this follow model spec for all pre-processing and validation
 def assign_df_row_to_object_attributes(input_object, input_row):
     # srtip() 
     # Rules: 
@@ -87,15 +83,16 @@ def assign_df_row_to_object_attributes(input_object, input_row):
                 # Check if the t string
                 setattr(input_object, attribute_name, attribute_value)
                 
+                
+                
+    # UP NEXT: replicate the below 3 lines but referencing model spec. Also remember to add the regional_projections allocation algorithm input to the model spec. 
+                
     model_spec = {}
     model_spec['regional_projections_input_path'] = ''
     assign_defaults_from_model_spec(input_object, model_spec)
 
 
-
-
-
-
+# Old approach. Literally writes a csv.
 def generate_scenarios_csv_and_put_in_input_dir(p):
     # In the event that the scenarios csv was not set, this currently wouldn't yet be a scenarios_df
     # Yet, I still want to be able to iterate over it. So thus, I need to GENERATE the scenarios_df from the project_flow
@@ -181,7 +178,7 @@ def generate_scenarios_csv_and_put_in_input_dir(p):
 
 
 
-
+# Old approach. Now we want to replace this with model spec, but here is a bunch of stuff that has modelspec info in comments
 def set_attributes_to_default(p):
     # Set all ProjectFlow attributes to SEALS default.
     # This is used if the user has never run something before, and therefore doesn't
@@ -295,15 +292,7 @@ def set_attributes_to_default(p):
     p.base_year_lulc_path = p.key_base_year_lulc_src_path
 
 
-
-
-
-
-
-
-
-
-
+# Not SURE if this is modelspec, but maybe it would allow custom functions after an input?
 def set_derived_attributes(p):
     
     # Resolutions come from the fine and coarse maps
@@ -373,3 +362,7 @@ def set_derived_attributes(p):
         p.processing_resolution = 1.0
     
     p.processing_resolution_arcseconds = p.processing_resolution * 3600.0 # MUST BE FLOAT
+    
+    def parse_model_spec_md(input_md_path):
+        out = {}
+        return out
