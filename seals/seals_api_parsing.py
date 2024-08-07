@@ -12,12 +12,105 @@ def assign_defaults_from_model_spec(input_object, model_spec_dict):
             setattr(input_object, k, v)
             
 def parse_input_api_md(input_md_path):
-    lines = hb.read_path_as_list()
-    
+    lines = hb.read_path_as_list(input_md_path)
+    d = {}
+    level = 0
     for line in lines:
-        # NEXT UP: Finish parsing_input_api_md to df
-        print('line', line)
+        line = line.replace('\n', '')
+        if len(line.strip()) == 0:
+            continue
+        
+        if line.startswith('# '):
+            level = 1
+            k1 = line.replace('#', '').strip()
+            d[k1] = {}
+            
+        elif line.startswith('## '):
+            level = 2
+            k2 = line.replace('##', '').strip()
+            d[k1][k2] = {}
+            
+        # Test if has a key
+        elif line.startswith('- '):
+            if len(line.replace('- ', '').strip().split(':')[0].split(' ')) == 1:        
+
+                # Then its a key value
+                key = line.replace('-', '').strip().split(':')[0].strip()
+                value = line.replace('-', '').strip().split(':')[1].strip()
+                
+                if key == "Examples":
+                    value = [i.strip() for i in value.split(',')]
+                    
+                
+
+                if level == 1:
+                    
+                    if 'Type' in d[k1].keys():
+                        current_type = d[k1]['Type']
+                        if key == 'Default':
+                            if current_type == 'int':
+                                value = int(value)
+                            elif current_type == 'float':
+                                value = float(value)
+                            elif current_type == 'list':
+                                value = [i.strip() for i in value.split(',')]
+                            elif current_type == 'str':
+                                value = str(value)
+                            elif current_type == 'path':
+                                value = str(value)
+                            elif current_type == 'bool':
+                                value = bool(value)
+                            else:
+                                value = value
+                    d[k1][key] = value
+                    
+                elif level == 2:
+                    
+                    if 'Type' in d[k1][k2].keys():
+                        current_type = d[k1][k2]['Type']
+                        if key == 'Default':
+                            if current_type == 'int':
+                                value = int(value)
+                            elif current_type == 'float':
+                                value = float(value)
+                            elif current_type == 'list':
+                                value = [i.strip() for i in value.split(',')]
+                            elif current_type == 'space delimited list of integers':
+                                value = [int(i.strip()) for i in value.split(' ')]
+                            elif current_type == 'str':
+                                value = str(value)
+                            elif current_type == 'path':
+                                value = str(value)
+                            elif current_type == 'bool':
+                                value = bool(value)
+                            else:
+                                value = value
+                    d[k1][k2][key] = value
+                    
+                            
+                    
+            
+        # print('line', line)
+    hb.print_iterable(d)
     
+    return d
+            
+            
+def api_dict_to_df(api_dict):
+    # Flatten the dict so only ## level 2 are there
+    flat_dict = {}
+    for k1, v1 in api_dict.items():
+        for k2, v2 in v1.items():
+            flat_dict[k2] = v2
+            
+    parsed_dict = {}
+    for k, v in flat_dict.items():  
+        if type(v) is dict:
+            parsed_dict[k] = v['Default']     
+    
+    df = pd.DataFrame(parsed_dict)
+    
+    print(df)   
             
 # Make this follow model spec for all pre-processing and validation
 def assign_df_row_to_object_attributes(input_object, input_row):

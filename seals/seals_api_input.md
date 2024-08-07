@@ -1,14 +1,13 @@
 
 # Setup parameters
 
-This file defines the input to a standard SEALS run. The markdown notation here is parsed to a csv file saved at scenario_definitions.csv. This file is then used to generate the SEALS model run. If you have just installed SEALS, be sure to run the "run_test_standard.py" file to generate an example of the CSV for you to inspect, edit, or use as a template.
+- Description: This file defines the input to a standard SEALS run. The markdown notation here is parsed to a csv file saved at scenario_definitions.csv. This file is then used to generate the SEALS model run. If you have just installed SEALS, be sure to run the "run_test_standard.py" file to generate an example of the CSV for you to inspect, edit, or use as a template.
 
 
 ## aoi
 
-- Description: Sets the area of interest. If set as a region_label (e.g., a country-ISO3 codes), all data will be generated based that regions boundaries (as defined in the regional_boundaries_input_path). Other options include setting it to "global" or a specific shapefile, or iso3 code. Good small examples include RWA, BTN
+- Description: Sets the area of interest. If set as a region_label (e.g., a country-ISO3 codes), all data will be generated based that regions boundaries (as defined in the regional_boundaries_input_path). Other options include setting it to "global" or a specific shapefile, or iso3 code. Good small examples include RWA, BTN. Can be either 3-letter ISO code, keyword "global", or is a path.
 - Type: string, path
-  - either 3-letter ISO code, keyword "global", or is a path
 - Default: "RWA"
 - Required: True
 - Examples: "RWA", "BDI", "global", "cartographic/ee/seals/default_inputs/rwa_bdi.shp"
@@ -43,7 +42,7 @@ This file defines the input to a standard SEALS run. The markdown notation here 
 
 # Projection inputs
 
-SEALS supports 2 types of projection inputs: regional and coarse. Regional projections, defined via a vector file (gpkg) and some distribution algorithm (e.g. proportional allocation).Coarse are coarse-resolution gridded data, such as the 30km resolution outputs of IAMs. 
+- Description: SEALS supports 2 types of projection inputs: regional and coarse. Regional projections, defined via a vector file (gpkg) and some distribution algorithm (e.g. proportional allocation).Coarse are coarse-resolution gridded data, such as the 30km resolution outputs of IAMs. 
 
 
 ## regional_projections_input_path
@@ -82,7 +81,7 @@ SEALS supports 2 types of projection inputs: regional and coarse. Regional proje
 
 # Scenario structure
 
-Scenarios will follow the relatively strict structure defined below. Currently seals doesn't let you customize the number of different nested categories, but this may come in a future release. For now, make sure that the scenarios follow this exactly and have all parts filled (even with with a placeholder string like "all" or "no_counterfactual").
+- Description: Scenarios will follow the relatively strict structure defined below. Currently seals doesn't let you customize the number of different nested categories, but this may come in a future release. For now, make sure that the scenarios follow this exactly and have all parts filled (even with with a placeholder string like "all" or "no_counterfactual").
 
 
 ## scenario_label
@@ -141,8 +140,8 @@ Scenarios will follow the relatively strict structure defined below. Currently s
 ## years
 
 - Description: If is not a baseline scenario, these are years into the future. Duplicate the base_year variable below if it is a base year
-- Type: integer, space delimited list of integers
-- Default: None
+- Type: space delimited list of integers
+- Default: 2030 2050
 - Required: True
 - Examples: 2030 2050, 2025 2030 2035 2040 2045 2050
   
@@ -184,7 +183,7 @@ Scenarios will follow the relatively strict structure defined below. Currently s
 
 # Correspondneces
 
-There are two different correspondences that are typically used to map inputs to that required by seals. First is an LULC correspondence that maps the input, e.g., ESA CCI 37 classes, to some simpler classification for which there exists a SEALS calibration file, e.g., seals7. The second is the coarse-gridded land-use projection that maps the input, e.g., LUH2-14, to some simpler classification for which there exists a SEALS calibration file, e.g., seals7.
+- Description: There are two different correspondences that are typically used to map inputs to that required by seals. First is an LULC correspondence that maps the input, e.g., ESA CCI 37 classes, to some simpler classification for which there exists a SEALS calibration file, e.g., seals7. The second is the coarse-gridded land-use projection that maps the input, e.g., LUH2-14, to some simpler classification for which there exists a SEALS calibration file, e.g., seals7.
 
 
 ## lulc_src_label
@@ -254,7 +253,7 @@ There are two different correspondences that are typically used to map inputs to
 
 # Coarse projections preproccessing 
 
-These are mostly deprecated, but these keywords allow for automatically extracting the correct parts of potentially malformed netcdfs.
+- Description: These are mostly deprecated, but these keywords allow for automatically extracting the correct parts of potentially malformed netcdfs.
 
 
 ## time_dim_adjustment
