@@ -10,7 +10,7 @@ import hazelbean as hb
 from hazelbean import cloud_utils
 import pandas as pd
 
-import seals_main
+from seals import seals_main
 import seals_utils
 import seals_generate_base_data
 import seals_process_coarse_timeseries
