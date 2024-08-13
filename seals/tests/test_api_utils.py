@@ -10,6 +10,8 @@ def test_api_utils():
     
     df = seals_api_parsing.api_dict_to_df(api_dict)
     
+    # seals_api_parsing.iterate_scenarios(df)
+    
 if __name__ == '__main__':
     test_api_utils()
     
