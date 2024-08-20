@@ -73,6 +73,7 @@ def regional_change(p):
 
 
 def coarse_change(p):
+    # Make folder for all generated data.
     # Just to create folder
     pass
 
@@ -380,6 +381,7 @@ def coarse_extraction_btc(p):
 
 
 def coarse_extraction(p):
+    # Extract coarse change from source
     doc = """Create a empty folder dir. This will hold all of the coarse intermediate outputs, such as per-year changes in lu hectarage. Naming convention matches source. After reclassification this will be in destination conventions.  """
     if p.run_this:
          
@@ -440,6 +442,7 @@ def coarse_extraction(p):
 
                 
 def coarse_simplified_proportion(p):
+    # Reclassify coarse source to simplified scheme 
     task_note = """This function converts the extracted geotiffs from the source 
 classification to the the destination classification, potentially aggregating classes as it goes. """\
     
@@ -692,6 +695,7 @@ def coarse_simplified_ha_difference_from_base_year(p):
 
 
 def coarse_simplified_ha_difference_from_previous_year(p):
+    # Calculate LUH2_simplified difference from base year
     task_documentation = """Calculates LUH2_simplified difference from base year"""
     if p.run_this:      
 
