@@ -124,6 +124,13 @@ def initialize_scenario_definitions(p):
     seals_utils.set_derived_attributes(p)
 
 
+def build_task_tree_by_name(p, task_tree_name):
+    full_task_tree_name = 'build_' + task_tree_name + '_task_tree'
+    target_function = globals()[full_task_tree_name]
+    print('Launching SEALS. Building task tree: ' + task_tree_name)
+
+    target_function(p)
+
 
 def build_complete_run_task_tree(p):
     ## OUT OF DATE, but should be replicated
