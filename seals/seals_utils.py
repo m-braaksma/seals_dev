@@ -35,7 +35,7 @@ dev_mode = True
 def recompile_cython(env_name):
 
         # Recompile if needed and configured.
-    recompile_cython = 1
+    recompile_cython = 0
     if recompile_cython:
         import subprocess
 
@@ -1445,7 +1445,7 @@ def convert_regional_change_to_coarse(regional_change_vector_path, regional_chan
         
         # TODOO NOTE that here we are not using all_touched. This is a fundamental problem with coarse reclassification. Lots of the polygon will be missed. Ideally, you use all_touched=False for 
         # country-country borders but all_touched=True for country-coastline boarders. Or join with EEZs?
-        hb.rasterize_to_match(regional_change_vector_path, coarse_ha_per_cell_path, region_ids_raster_path, burn_column_name='ee_r264_id', burn_values=None, datatype=5, ndv=0, all_touched=False)
+        hb.rasterize_to_match(regional_change_vector_path, coarse_ha_per_cell_path, region_ids_raster_path, burn_column_name='ee_r264_id', burn_values=None, datatype=13, ndv=0, all_touched=False)
 
     # Get the number of cells per zone. We need to know how big the zone is in terms of coarse cells so we can calculate how much of the total change happens in each coarse gridcell    
     # TODOOO: Think about how I should deal with giving the whole regional_change_vector or if I should have it subset out the line it needs, cause this is a utility function.

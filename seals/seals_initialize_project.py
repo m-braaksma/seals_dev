@@ -172,7 +172,7 @@ def build_complete_run_task_tree(p):
     return p
 
 
-def build_standard_run_task_tree(p):
+def build_standard_task_tree(p):
 
     # Define the project AOI
     p.project_aoi_task = p.add_task(seals_tasks.project_aoi)
