@@ -7,6 +7,19 @@ maintainers = [
         {name = "Justin Andrew Johnson"}
 ]
 keywords = ["geospatial", "raster", "shapefile"]
+dependencies = [
+        "geopandas",
+        "hazelbean",
+        "google-cloud-storage",
+        "matplotlib",
+        "netcdf4",
+        "numpy",
+        "gdal",
+        "pandas",
+        "pygeoprocessing",
+        "scipy",
+        "scikit-learn"
+]
 
 # These attributes are pulled from setup.py instead of being defined here
 dynamic = ["version"]
