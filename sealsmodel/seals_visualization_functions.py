@@ -1,10 +1,12 @@
+import os
+
+import hazelbean as hb
+import numpy as np
+import pandas as pd
 from matplotlib import colors as colors
 from matplotlib import pyplot as plt
-import numpy as np
-import hazelbean as hb
-import os
-import seals_utils
-import pandas as pd
+
+from . import seals_utils
 
 
 def show_lulc_class_change_difference(baseline_array, observed_array, projected_array, lulc_class, similarity_array, change_array, annotation_text, output_path, **kwargs):
@@ -140,8 +142,8 @@ def plot_array_as_seals7_lulc(input_array, output_path, title, indices_to_labels
     cmap = generate_custom_colorbar(input_array, color_scheme='seals_simplified')
     im = ax.imshow(input_array, cmap=cmap, vmin=0, vmax=10, interpolation='nearest')
 
-    max_cbar_category = 7  
-    min_cbar_category = 1 
+    max_cbar_category = 7
+    min_cbar_category = 1
     n_categories = 7
 
     bin_size = (max_cbar_category - min_cbar_category) / (n_categories - 1)
@@ -159,7 +161,7 @@ def plot_array_as_seals7_lulc(input_array, output_path, title, indices_to_labels
     # cbar = plt.colorbar(im, ax=ax, cmap=cmap, orientation=orientation, )  # , format='%1i', spacing='proportional', norm=norm,
     # cbar = plt.colorbar(im, ax=ax, cmap=cmap, ticks=ticks, boundaries=bounds, orientation=orientation, )  # , format='%1i', spacing='proportional', norm=norm,
     cbar = plt.colorbar(im, ax=ax, orientation=orientation, aspect=aspect, shrink=shrink, cmap=cmap, ticks=ticks, boundaries=bounds)  # , format='%1i', spacing='proportional', norm=norm,
-    
+
 
     ticklabels = [i.title() for i in list([i for i in indices_to_labels_dict.values() if 'ndv' not in i.lower()])]
     # ticklabels = [i.title() for i in list(indices_to_labels_dict.values())[1:]]
@@ -262,7 +264,7 @@ def show_class_expansions_vs_change_underneath(lulc_baseline_array, projected_lu
 
     # Need to upsample the coarse resolution to the fine reslution so that they can be plotted on the same axis.
     multiplication_factor = int(projected_lulc_array.shape[0] / change_array.shape[0]) # Scales up so that it equals hectares still.
-    
+
     import hazelbean.calculation_core.aspect_ratio_array_functions
     change_array_r = hazelbean.calculation_core.aspect_ratio_array_functions.naive_downscale(change_array.astype(np.float64), multiplication_factor)
 
@@ -343,7 +345,7 @@ def show_class_expansions_vs_change(lulc_baseline_array, projected_lulc_array, c
 
     # Need to upsample the coarse resolution to the fine reslution so that they can be plotted on the same axis.
     multiplication_factor = int(projected_lulc_array.shape[0] / change_array.shape[0]) # Scales up so that it equals hectares still.
-    
+
     import hazelbean.calculation_core.aspect_ratio_array_functions
     change_array_r = hazelbean.calculation_core.aspect_ratio_array_functions.naive_downscale(change_array.astype(np.float64), multiplication_factor)
 
@@ -422,7 +424,7 @@ def show_class_expansions_vs_change_with_numeric_report(lulc_baseline_array, pro
 
     # Need to upsample the coarse resolution to the fine reslution so that they can be plotted on the same axis.
     multiplication_factor = int(projected_lulc_array.shape[0] / change_array.shape[0]) # Scales up so that it equals hectares still.
-    
+
     import hazelbean.calculation_core.aspect_ratio_array_functions
     change_array_r = hazelbean.calculation_core.aspect_ratio_array_functions.naive_downscale(change_array.astype(np.float64), multiplication_factor)
 
@@ -472,10 +474,10 @@ def show_class_expansions_vs_change_with_numeric_report(lulc_baseline_array, pro
     report_string = ''
     report_string += 'n cells before: ' + str(np.count_nonzero(lulc_baseline_array == class_id)) + '\n'
     report_string += 'n cells after: ' + str(np.count_nonzero(projected_lulc_array == class_id)) + '\n'
-    
+
     expansions = np.count_nonzero(np.where((projected_lulc_array == class_id) & (lulc_baseline_array != class_id), 1, 0))
     contractions = np.count_nonzero(np.where((projected_lulc_array != class_id) & (lulc_baseline_array == class_id), 1, 0))
-    
+
     sum_expansions = np.sum(expansions)
     sum_contractions = np.sum(contractions)
 
@@ -484,8 +486,8 @@ def show_class_expansions_vs_change_with_numeric_report(lulc_baseline_array, pro
 
     net_alloc = sum_expansions - sum_contractions
     report_string += 'net alloc: ' + str(net_alloc) + '\n'
-    
-    
+
+
     sum_change_array = np.sum(change_array)
     mean_ha_per_cell_fine = np.mean(ha_per_cell_fine_array)
     requested = sum_change_array / mean_ha_per_cell_fine
@@ -538,7 +540,7 @@ def show_specific_class_expansions_vs_change_with_numeric_report_and_validation(
 
     # Need to upsample the coarse resolution to the fine reslution so that they can be plotted on the same axis.
     multiplication_factor = int(projected_lulc_array.shape[0] / change_array.shape[0]) # Scales up so that it equals hectares still.
-    
+
     import hazelbean.calculation_core.aspect_ratio_array_functions
     change_array_r = hazelbean.calculation_core.aspect_ratio_array_functions.naive_downscale(change_array.astype(np.float64), multiplication_factor)
 
@@ -598,10 +600,10 @@ def show_specific_class_expansions_vs_change_with_numeric_report_and_validation(
     report_string = ''
     report_string += 'n cells before: ' + str(np.count_nonzero(lulc_baseline_array == class_id)) + '\n'
     report_string += 'n cells after: ' + str(np.count_nonzero(projected_lulc_array == class_id)) + '\n'
-    
+
     expansions = np.count_nonzero(np.where((projected_lulc_array == class_id) & (lulc_baseline_array != class_id), 1, 0))
     contractions = np.count_nonzero(np.where((projected_lulc_array != class_id) & (lulc_baseline_array == class_id), 1, 0))
-    
+
     sum_expansions = np.sum(expansions)
     sum_contractions = np.sum(contractions)
 
@@ -610,8 +612,8 @@ def show_specific_class_expansions_vs_change_with_numeric_report_and_validation(
 
     net_alloc = sum_expansions - sum_contractions
     report_string += 'net alloc: ' + str(net_alloc) + '\n'
-    
-    
+
+
     sum_change_array = np.sum(change_array)
     mean_ha_per_cell_fine = np.mean(ha_per_cell_fine_array)
     requested = sum_change_array / mean_ha_per_cell_fine
@@ -647,12 +649,12 @@ def show_all_class_expansions_vs_change_with_numeric_report_and_validation(lulc_
         left_col = 0 + c * 3
         right_col = 3 + c * 3
         axes_grid.append([])
-        
+
         axes_grid[c].append(fig.add_subplot(gs[left_col:right_col, 0:3]))
         axes_grid[c].append(fig.add_subplot(gs[left_col:right_col, 3:6]))
         axes_grid[c].append(fig.add_subplot(gs[left_col:right_col, 6:9]))
         axes_grid[c].append(fig.add_subplot(gs[left_col:right_col, 9:12]))
-        
+
     bottom_left_ax = fig.add_subplot(gs[right_col, 0:3])
     bottom_right_ax = fig.add_subplot(gs[right_col, 3:6])
     bottom_right_right_ax = fig.add_subplot(gs[right_col, 6:9])
@@ -681,7 +683,7 @@ def show_all_class_expansions_vs_change_with_numeric_report_and_validation(lulc_
 
         # Need to upsample the coarse resolution to the fine reslution so that they can be plotted on the same axis.
         multiplication_factor = int(projected_lulc_array.shape[0] / change_array.shape[0]) # Scales up so that it equals hectares still.
-        
+
         import hazelbean.calculation_core.aspect_ratio_array_functions
         change_array_r = hazelbean.calculation_core.aspect_ratio_array_functions.naive_downscale(change_array.astype(np.float64), multiplication_factor)
 
@@ -718,10 +720,10 @@ def show_all_class_expansions_vs_change_with_numeric_report_and_validation(lulc_
         report_string = class_label.title() + '\n\n'
         report_string += 'n cells before: ' + str(np.count_nonzero(lulc_baseline_array == class_id)) + '\n'
         report_string += 'n cells after: ' + str(np.count_nonzero(projected_lulc_array == class_id)) + '\n'
-        
+
         expansions = np.count_nonzero(np.where((projected_lulc_array == class_id) & (lulc_baseline_array != class_id), 1, 0))
         contractions = np.count_nonzero(np.where((projected_lulc_array != class_id) & (lulc_baseline_array == class_id), 1, 0))
-        
+
         sum_expansions = np.sum(expansions)
         sum_contractions = np.sum(contractions)
 
@@ -729,8 +731,8 @@ def show_all_class_expansions_vs_change_with_numeric_report_and_validation(lulc_
         report_string += 'contractions: ' + str(sum_contractions) + '\n'
 
         net_alloc = sum_expansions - sum_contractions
-        report_string += 'net alloc: ' + str(net_alloc) + '\n'        
-        
+        report_string += 'net alloc: ' + str(net_alloc) + '\n'
+
         sum_change_array = np.sum(change_array)
         mean_ha_per_cell_fine = np.mean(ha_per_cell_fine_array)
         requested = sum_change_array / mean_ha_per_cell_fine
@@ -835,4 +837,3 @@ def plot_coarse_change_3d(output_dir, coarse_change_3d):
     fig.tight_layout()
     fig.savefig(output_path, dpi=600, )
     plt.close()
-

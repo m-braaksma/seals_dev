@@ -1,26 +1,28 @@
+import multiprocessing
 import os
+
+import config
+import geopandas as gpd
 import hazelbean as hb
+import netCDF4 as nc
 import numpy as np
 import pandas as pd
-import multiprocessing
-from matplotlib import pyplot as plt
-import geopandas as gpd
 from hazelbean import netcdf
-from seals_utils import download_google_cloud_blob
-from hazelbean import netcdf
-from hazelbean.netcdf import describe_netcdf, extract_global_netcdf
-import config
-from hazelbean import utils
 from hazelbean import pyramids
+from hazelbean import utils
+from hazelbean.netcdf import describe_netcdf
+from hazelbean.netcdf import extract_global_netcdf
+from matplotlib import pyplot as plt
 from osgeo import gdal
-import netCDF4 as nc
 
-import seals_utils
+from . import seals_utils
+from .seals_utils import download_google_cloud_blob
+
 
 def regional_change(p):
     if p.run_this:
-        
-        
+
+
 
         for index, row in p.scenarios_df.iterrows():
             seals_utils.assign_df_row_to_object_attributes(p, row)
@@ -30,38 +32,38 @@ def regional_change(p):
                     regional_change_vector_path = p.aoi_path
                     coarse_ha_per_cell_path = p.aoi_ha_per_cell_coarse_path
                     # output_path = os.path.join(p.cur_dir, 'regional_change_vector.tif')
-                    
+
                     columns_to_process = p.changing_class_labels
                     regional_change_classes_path = p.regional_projections_input_path
-                    
-                    for c, year in enumerate(p.years):   
-                        if c > 0:                                  
-                            previous_year = p.years[c - 1]                                
+
+                    for c, year in enumerate(p.years):
+                        if c > 0:
+                            previous_year = p.years[c - 1]
                         else:
                             previous_year = p.key_base_year
-                        
+
                         region_ids_raster_path = os.path.join(p.cur_dir, 'region_ids.tif')
-                        output_dir = os.path.join(p.cur_dir, p.exogenous_label, p.climate_label, p.model_label, p.counterfactual_label, str(year)) 
-                        scenario_label = p.scenario_label    
+                        output_dir = os.path.join(p.cur_dir, p.exogenous_label, p.climate_label, p.model_label, p.counterfactual_label, str(year))
+                        scenario_label = p.scenario_label
                         output_filename_end = '_' + str(year) + '_' + str(previous_year) + '_ha_diff_' + p.exogenous_label + '_' + p.climate_label + '_' + p.model_label + '_' + p.counterfactual_label + '.tif'
-                        
+
                         # TODOO I should have iterated on class label here, then called the util file only on that one
                         seals_utils.convert_regional_change_to_coarse(regional_change_vector_path, regional_change_classes_path, coarse_ha_per_cell_path, scenario_label, output_dir, output_filename_end, columns_to_process, region_ids_raster_path=region_ids_raster_path, distribution_algorithm='proportional', coarse_change_raster_path=None)
-                                    
-                
-                        
+
+
+
                         if hb.path_exists(p.coarse_projections_input_path): # Then it is a regional shift with a coarse spatial projection
                             for column in columns_to_process:
-                                
-                                local_dir = os.path.join(p.coarse_simplified_ha_difference_from_previous_year_dir, p.exogenous_label, p.climate_label, p.model_label, p.counterfactual_label, str(year)) 
+
+                                local_dir = os.path.join(p.coarse_simplified_ha_difference_from_previous_year_dir, p.exogenous_label, p.climate_label, p.model_label, p.counterfactual_label, str(year))
                                 local_filename = column + '_' + str(year) + '_' + str(previous_year) + '_ha_diff_' + p.exogenous_label + '_' + p.climate_label + '_' + p.model_label + '_' + p.counterfactual_label + '.tif'
                                 local_path = os.path.join(local_dir, local_filename)
                                 hb.log("loading the coarse gridded projection raster from " + local_path)
                                 coarse_projections = hb.as_array(local_path)
-                                
+
                                 output_filename = column + '_' + str(year) + '_' + str(previous_year) + '_ha_diff_' + p.exogenous_label + '_' + p.climate_label + '_' + p.model_label + '_' + p.counterfactual_label + '.tif'
                                 output_path = os.path.join(output_dir, output_filename)
-                                
+
                                 # Now add the coarse_projections to the regional_coarsified_raster
                                 regional_coarsified_raster = hb.as_array(output_path)
                                 regional_coarsified_raster += coarse_projections
@@ -69,7 +71,7 @@ def regional_change(p):
                         else:
                             "no need to shift it then."
                 else:
-                    hb.log('No regional change listed, so not shifting regions.')    
+                    hb.log('No regional change listed, so not shifting regions.')
 
 
 def coarse_change(p):
@@ -78,8 +80,8 @@ def coarse_change(p):
     pass
 
 def download_base_data(p):
-    task_note = """" 
-Download the base data. Unlike other tasks, this task puts the files into a tightly defined directory structure rooted at  p.base_data_dir    
+    task_note = """"
+Download the base data. Unlike other tasks, this task puts the files into a tightly defined directory structure rooted at  p.base_data_dir
     """
     if p.run_this:
 
@@ -122,8 +124,9 @@ def lulc_as_coarse_states(p):
     """For the purposes of calibration, create change-matrices for each coarse grid-cell based on two observed ESA lulc maps.
     Does something similar to prepare_lulc"""
 
-    from hazelbean.calculation_core.cython_functions import calc_change_matrix_of_two_int_arrays
-   
+    from hazelbean.calculation_core.cython_functions import \
+        calc_change_matrix_of_two_int_arrays
+
     if p.run_this:
         p.ha_per_cell_coarse = hb.ArrayFrame(p.global_ha_per_cell_course_path)
         p.coarse_match = hb.ArrayFrame(p.global_ha_per_cell_course_path)
@@ -261,7 +264,7 @@ def extract_btc_netcdf(src_nc_path, output_dir, filter_dict, correspondence_dict
     var_name = 'LC_area_share'
     if not check_netcdf_file(src_nc_path, var_name):
         return
-    
+
     full_src_nc_path = f'NETCDF:"{src_nc_path}":{var_name}'
     ds = gdal.Open(full_src_nc_path)
     if ds is None:
@@ -333,7 +336,7 @@ def coarse_extraction_btc(p):
                     hb.log('Could not find ' + str(p.coarse_projections_input_path) + ' in either ' + str(p.input_dir) + ' or ' + str(p.base_data_dir))
 
                 dst_dir = os.path.join(p.cur_dir, p.exogenous_label, p.model_label)
-                
+
                 filter_dict = {'time': p.years}
                 # print(p.years)
                 # print(p.coarse_correspondence_dict)
@@ -343,7 +346,7 @@ def coarse_extraction_btc(p):
                 for year in p.years:
                     out_dst_dir = os.path.join(dst_dir, 'time_' + str(year))
                     hb.create_directories(out_dst_dir)
-                
+
                     for lc_class_name in p.coarse_correspondence_dict.values():
                         out_dst_lc_path = os.path.join(out_dst_dir, f"{lc_class_name}.tif")
                         hb.make_path_global_pyramid(out_dst_lc_path)
@@ -360,7 +363,7 @@ def coarse_extraction_btc(p):
 
                 dst_dir = os.path.join(p.cur_dir, p.exogenous_label, p.climate_label, p.model_label, p.counterfactual_label)
                 filter_dict = {'time': p.years}
-                
+
                 # print(p.years)
                 # print(p.coarse_correspondence_dict)
 
@@ -369,11 +372,11 @@ def coarse_extraction_btc(p):
                 for year in p.years:
                     out_dst_dir = os.path.join(dst_dir, 'time_' + str(year))
                     hb.create_directories(out_dst_dir)
-                
+
                     for lc_class_name in p.coarse_correspondence_dict.values():
                         out_dst_lc_path = os.path.join(out_dst_dir, f"{lc_class_name}.tif")
                         hb.make_path_global_pyramid(out_dst_lc_path)
-                    
+
         p.coarse_extraction_dir = p.coarse_extraction_btc_dir
 
 
@@ -384,10 +387,10 @@ def coarse_extraction(p):
     # Extract coarse change from source
     doc = """Create a empty folder dir. This will hold all of the coarse intermediate outputs, such as per-year changes in lu hectarage. Naming convention matches source. After reclassification this will be in destination conventions.  """
     if p.run_this:
-         
-        
+
+
         # if p.report_netcdf_read_analysis:
-            
+
         for index, row in list(p.scenarios_df.iterrows()):
             seals_utils.assign_df_row_to_object_attributes(p, row)
 
@@ -425,7 +428,7 @@ def coarse_extraction(p):
                         hb.log('No understandible input_source.')
                 else:
                     hb.log('No coarse change listed')
-               
+
                 dst_dir = os.path.join(p.cur_dir, p.exogenous_label, p.climate_label, p.model_label, p.counterfactual_label)
 
 
@@ -440,23 +443,23 @@ def coarse_extraction(p):
                 if not hb.path_exists(dst_dir):
                     extract_global_netcdf(src_nc_path, dst_dir, adjustment_dict, filter_dict, skip_if_exists=True, verbose=0)
 
-                
+
 def coarse_simplified_proportion(p):
-    # Reclassify coarse source to simplified scheme 
-    task_note = """This function converts the extracted geotiffs from the source 
+    # Reclassify coarse source to simplified scheme
+    task_note = """This function converts the extracted geotiffs from the source
 classification to the the destination classification, potentially aggregating classes as it goes. """\
-    
+
     if p.run_this:
-        
+
         for index, row in p.scenarios_df.iterrows():
             seals_utils.assign_df_row_to_object_attributes(p, row)
             hb.log('Converting coarse_extraction to simplified proportion for scenario ' + str(index) + ' of ' + str(len(p.scenarios_df)) + ' with row ' + str([i for i in row]))
 
 
-            
+
             # p.coarse_correspondence_path = hb.get_first_extant_path(p.coarse_correspondence_path, [p.input_dir, p.base_data_dir])
             p.coarse_correspondence_dict = hb.utils.get_reclassification_dict_from_df(p.coarse_correspondence_path, 'src_id', 'dst_id', 'src_label', 'dst_label')
-            
+
             # if hb.path_exists(os.path.join(p.input_dir, p.coarse_correspondence_path)):
             #     p.coarse_correspondence_dict = hb.utils.get_reclassification_dict_from_df(os.path.join(p.input_dir, p.coarse_correspondence_path), 'src_id', 'dst_id', 'src_label', 'dst_label')
             # elif hb.path_exists(os.path.join(p.base_data_dir, p.coarse_correspondence_path)):
@@ -467,7 +470,7 @@ classification to the the destination classification, potentially aggregating cl
             if p.scenario_type == 'baseline':
 
                 for year in p.years:
-                    
+
                     dst_dir = os.path.join(p.cur_dir, p.exogenous_label, p.model_label, str(year))
                     hb.create_directories(dst_dir)
 
@@ -478,12 +481,12 @@ classification to the the destination classification, potentially aggregating cl
 
 
                         # dst_class_label = list(p.coarse_correspondence_dict['dst_labels'])[pos]
-                        
+
                         dst_class_label = p.coarse_correspondence_dict['dst_ids_to_labels'][k]
                         dst_path = os.path.join(dst_dir, str(dst_class_label) + '_prop_' + p.exogenous_label + '_' + p.model_label + '_' + str(year) + '.tif')
 
                         if not hb.path_exists(dst_path):
-                            
+
                             # Notice that here implies the relationship from src to simplified is many to one.
                             for c, i in enumerate(v):
 
@@ -517,7 +520,7 @@ classification to the the destination classification, potentially aggregating cl
                             output_array = None
             else:
                 for year in p.years:
-                    
+
                     dst_dir = os.path.join(p.cur_dir, p.exogenous_label, p.climate_label, p.model_label, p.counterfactual_label, str(year))
                     hb.create_directories(dst_dir)
 
@@ -530,7 +533,7 @@ classification to the the destination classification, potentially aggregating cl
                         dst_path = os.path.join(dst_dir, str(dst_class_label) + '_prop_' + p.exogenous_label + '_' + p.climate_label + '_' + p.model_label + '_' + p.counterfactual_label + '_' + str(year) + '.tif')
 
                         if not hb.path_exists(dst_path):
-                            
+
                             # Notice that here implies the relationship from src to simplified is many to one.
                             for c, i in enumerate(v):
 
@@ -559,18 +562,18 @@ classification to the the destination classification, potentially aggregating cl
                                     if output_array is None:
                                         output_array = np.zeros(coarse_shape, dtype=np.float64)
                                     input_array = hb.as_array(src_path)
-                                    output_array += np.where(input_array != ndv, input_array, 0)                        
+                                    output_array += np.where(input_array != ndv, input_array, 0)
                             hb.save_array_as_geotiff(output_array, dst_path, src_path)
                             output_array = None
 
-                
+
 def coarse_simplified_ha(p):
 
     # Converts proportion to ha for each input.
     # NOTE this duplicates implicit work in the tasks with ha_differencel, but those didn't save the intermedaite outputs so i made this.
-    
+
     if p.run_this:
-        
+
         for index, row in p.scenarios_df.iterrows():
             seals_utils.assign_df_row_to_object_attributes(p, row)
             hb.log('Converting simplified proportion to simplified_ha for scenario ' + str(index) + ' of ' + str(len(p.scenarios_df)) + ' with row ' + str([i for i in row]))
@@ -579,73 +582,73 @@ def coarse_simplified_ha(p):
                 for year in p.base_years:
                     src_dir = os.path.join(p.coarse_simplified_proportion_dir, p.exogenous_label, p.model_label, str(year))
                     dst_dir  = os.path.join(p.cur_dir, p.exogenous_label, p.model_label, str(year))
-                    
+
                     for class_c, class_label in enumerate(p.changing_class_labels):
                         dst_path = os.path.join(dst_dir, str(class_label) + '_ha_' + p.exogenous_label + '_' + p.model_label + '_' + str(year) + '.tif')
 
                         if not hb.path_exists(dst_path):
-                            
+
                             src_path = os.path.join(src_dir, class_label + '_prop_' + p.exogenous_label + '_' + p.model_label + '_' + str(year) + '.tif')
-                            
+
                             ha_array = hb.as_array(p.aoi_ha_per_cell_coarse_path)
                             # input_prop_array = hb.as_array(src_path)
                             input_prop_array = hb.load_geotiff_chunk_by_bb(src_path, p.bb)
                             output_ha = ha_array * input_prop_array
-                            
+
                             hb.save_array_as_geotiff(output_ha, dst_path, p.aoi_ha_per_cell_coarse_path)
-                            
+
 
             else:
                 for year in p.years:
-                    
+
                     src_dir = os.path.join(p.coarse_simplified_proportion_dir, p.exogenous_label, p.climate_label, p.model_label, p.counterfactual_label, str(year))
                     dst_dir  = os.path.join(p.cur_dir, p.exogenous_label, p.climate_label, p.model_label, p.counterfactual_label, str(year))
-                    
+
                     for class_c, class_label in enumerate(p.changing_class_labels):
 
                         dst_path = os.path.join(dst_dir, str(class_label) + '_ha_' + p.exogenous_label + '_' + p.climate_label + '_' + p.model_label + '_' + p.counterfactual_label + '_' + str(year) + '.tif')
 
                         if not hb.path_exists(dst_path):
-                            
+
                             src_path = os.path.join(src_dir, str(class_label) + '_prop_' + p.exogenous_label + '_' + p.climate_label + '_' + p.model_label + '_' + p.counterfactual_label + '_' + str(year) + '.tif')
-                            
+
                             ha_array = hb.as_array(p.aoi_ha_per_cell_coarse_path)
                             input_prop_array = hb.load_geotiff_chunk_by_bb(src_path, p.bb)
                             output_ha = ha_array * input_prop_array
-                            
-                            hb.save_array_as_geotiff(output_ha, dst_path, p.aoi_ha_per_cell_coarse_path)                
-                
-                
-                
+
+                            hb.save_array_as_geotiff(output_ha, dst_path, p.aoi_ha_per_cell_coarse_path)
+
+
+
 
 def coarse_simplified_ha_difference_from_base_year(p):
 
-    if p.run_this:      
+    if p.run_this:
 
         for index, row in p.scenarios_df.iterrows():
             seals_utils.assign_df_row_to_object_attributes(p, row)
             hb.log('Converting coarse_extraction to simplified proportion for scenario ' + str(index) + ' of ' + str(len(p.scenarios_df)) + ' with row ' + str([i for i in row]))
-            
+
             if hb.path_exists(os.path.join(p.input_dir, p.coarse_correspondence_path)):
                 p.lulc_correspondence_dict = hb.utils.get_reclassification_dict_from_df(os.path.join(p.input_dir, p.coarse_correspondence_path), 'src_id', 'dst_id', 'src_label', 'dst_label')
             elif hb.path_exists(os.path.join(p.base_data_dir, p.coarse_correspondence_path)):
                 p.lulc_correspondence_dict = hb.utils.get_reclassification_dict_from_df(os.path.join(p.base_data_dir, p.coarse_correspondence_path), 'src_id', 'dst_id', 'src_label', 'dst_label')
             else:
                 raise NameError('Unable to find ' + p.coarse_correspondence_path)
-                        
+
             cell_size = hb.get_cell_size_from_path(os.path.join(p.base_data_dir, p.coarse_projections_input_path))
-            
-            # correct_global_ha_per_cell_path = p.ha_per_cell_paths[cell_size * 3600.0] 
+
+            # correct_global_ha_per_cell_path = p.ha_per_cell_paths[cell_size * 3600.0]
             # correct_aoi_ha_per_cell_path = os.path.join(p.intermediate_dir, 'project_aoi', 'pyramids', 'aoi_ha_per_cell_' + str(int(cell_size * 3600.0)) + '.tif')
             # hb.clip_raster_by_bb(correct_global_ha_per_cell_path, p.bb, correct_aoi_ha_per_cell_path)
             ha_per_cell_array = hb.as_array(p.aoi_ha_per_cell_coarse_path)
-            
+
 
             if p.scenario_type != 'baseline':
 
 
                 for c, i in enumerate(p.coarse_correspondence_dict['dst_ids']):
-                   
+
                     # pos = list(coarse_correspondence_dict['values'].keys()).index(k)
 
 
@@ -658,7 +661,7 @@ def coarse_simplified_ha_difference_from_base_year(p):
                     baseline_reference_row = p.scenarios_df.loc[p.scenarios_df['scenario_label'] == baseline_reference_label]
                     baseline_exogenous_label = baseline_reference_row['exogenous_label'].values[0]
                     baseline_reference_model = baseline_reference_row['model_label'].values[0]
-                    
+
                     base_year = int(row['key_base_year'])
 
                     base_year_dir = os.path.join(p.coarse_simplified_proportion_dir, baseline_exogenous_label, baseline_reference_model, str(base_year))
@@ -666,7 +669,7 @@ def coarse_simplified_ha_difference_from_base_year(p):
                     # base_year_path = os.path.join(base_year_dir, p.lulc_simplification_label + '_' + v + '.tif')
 
                     for year in p.years:
-                    
+
                         src_dir = os.path.join(p.coarse_simplified_proportion_dir, p.exogenous_label, p.climate_label, p.model_label, p.counterfactual_label, str(year))
                         src_path = os.path.join(src_dir, str(dst_class_label) + '_prop_' + p.exogenous_label + '_' + p.climate_label + '_' + p.model_label + '_' + p.counterfactual_label + '_' + str(year) + '.tif')
 
@@ -684,47 +687,47 @@ def coarse_simplified_ha_difference_from_base_year(p):
                             base_year_ndv = hb.get_ndv_from_path(base_year_path)
 
                             input_array = np.where(input_array == input_ndv, 0, input_array)
-                            base_year_array = np.where(base_year_array == base_year_ndv, 0, base_year_array)                            
+                            base_year_array = np.where(base_year_array == base_year_ndv, 0, base_year_array)
 
                             if input_array.shape != base_year_array.shape:
-                                raise NameError('input_array.shape != base_year_array.shape: ' + str(input_array.shape) + ' != ' + str(base_year_array.shape) + '. This means that the coarse definition of the scenario that you are subtracting from the coarse definition of the baseline is mixing resolutions. You probably want to resample one of the two layers first.') 
+                                raise NameError('input_array.shape != base_year_array.shape: ' + str(input_array.shape) + ' != ' + str(base_year_array.shape) + '. This means that the coarse definition of the scenario that you are subtracting from the coarse definition of the baseline is mixing resolutions. You probably want to resample one of the two layers first.')
                             current_array = (input_array - base_year_array) * ha_per_cell_array
 
                             hb.save_array_as_geotiff(current_array, dst_path, p.aoi_ha_per_cell_coarse_path)
-                    
+
 
 
 def coarse_simplified_ha_difference_from_previous_year(p):
     # Calculate LUH2_simplified difference from base year
     task_documentation = """Calculates LUH2_simplified difference from base year"""
-    if p.run_this:      
+    if p.run_this:
 
         for index, row in p.scenarios_df.iterrows():
             seals_utils.assign_df_row_to_object_attributes(p, row)
             hb.log('Converting coarse_extraction to simplified proportion for scenario ' + str(index) + ' of ' + str(len(p.scenarios_df)) + ' with row ' + str([i for i in row]))
-            
+
             if hb.path_exists(os.path.join(p.input_dir, p.coarse_correspondence_path)):
                 p.lulc_correspondence_dict = hb.utils.get_reclassification_dict_from_df(os.path.join(p.input_dir, p.coarse_correspondence_path), 'src_id', 'dst_id', 'src_label', 'dst_label')
             elif hb.path_exists(os.path.join(p.base_data_dir, p.coarse_correspondence_path)):
                 p.lulc_correspondence_dict = hb.utils.get_reclassification_dict_from_df(os.path.join(p.base_data_dir, p.coarse_correspondence_path), 'src_id', 'dst_id', 'src_label', 'dst_label')
             else:
                 raise NameError('Unable to find ' + p.coarse_correspondence_path)
-                        
+
             cell_size = hb.get_cell_size_from_path(p.ha_per_cell_coarse_path)
-            
+
             # correct_global_ha_per_cell_path = p.ha_per_cell_coarse_path
             correct_aoi_ha_per_cell_path = os.path.join(p.intermediate_dir, 'project_aoi', 'pyramids', 'aoi_ha_per_cell_' + str(int(cell_size * 3600.0)) + 'sec.tif')
             # hb.clip_raster_by_bb(correct_global_ha_per_cell_path, p.bb, correct_aoi_ha_per_cell_path)
             ha_per_cell_array = hb.as_array(p.aoi_ha_per_cell_coarse_path)
-            
 
-            
+
+
 
             if p.scenario_type != 'baseline':
 
 
                 for c, i in enumerate(p.coarse_correspondence_dict['dst_ids']):
-                   
+
                     # pos = list(coarse_correspondence_dict['values'].keys()).index(k)
 
 
@@ -741,8 +744,8 @@ def coarse_simplified_ha_difference_from_previous_year(p):
                     previous_year = None
 
                     # Process the current row and its corresponding baseline to get the full set of years involved
-                    
-                    
+
+
                     # starting_year = int(row['key_base_year'])
                     # base_year = int(row['key_base_year'])
 
@@ -760,13 +763,13 @@ def coarse_simplified_ha_difference_from_previous_year(p):
                             current_starting_year_path = os.path.join(current_starting_year_dir, str(dst_class_label) + '_prop_' + baseline_exogenous_label + '_' + baseline_reference_model + '_' + str(current_starting_year) + '.tif')
                         else:
 
-                            
+
                             current_starting_year = previous_year
                             current_starting_year_dir = os.path.join(p.coarse_simplified_proportion_dir, p.exogenous_label, p.climate_label, p.model_label, p.counterfactual_label, str(current_starting_year))
                             # current_starting_year_dir = os.path.join(p.coarse_simplified_proportion_dir, baseline_exogenous_label, baseline_reference_model, str(current_starting_year))
                             current_starting_year_path = os.path.join(current_starting_year_dir, str(dst_class_label) + '_prop_' + p.exogenous_label + '_' + p.climate_label + '_' + p.model_label + '_' + p.counterfactual_label + '_' + str(current_starting_year) + '.tif')
                             # current_starting_year_path = os.path.join(current_starting_year_dir, str(dst_class_label) + '_prop_' + baseline_exogenous_label + '_' + baseline_reference_model + '_' + str(current_starting_year) + '.tif')
-                            
+
                         current_ending_year_src_dir = os.path.join(p.coarse_simplified_proportion_dir, p.exogenous_label, p.climate_label, p.model_label, p.counterfactual_label, str(year))
                         current_ending_year_src_path = os.path.join(current_ending_year_src_dir, str(dst_class_label) + '_prop_' + p.exogenous_label + '_' + p.climate_label + '_' + p.model_label + '_' + p.counterfactual_label + '_' + str(year) + '.tif')
 
@@ -784,13 +787,12 @@ def coarse_simplified_ha_difference_from_previous_year(p):
                             starting_year_ndv = hb.get_ndv_from_path(current_starting_year_path)
 
                             ending_year_array = np.where(ending_year_array == ending_year_ndv, 0, ending_year_array)
-                            starting_year_array = np.where(starting_year_array == starting_year_ndv, 0, starting_year_array)                            
+                            starting_year_array = np.where(starting_year_array == starting_year_ndv, 0, starting_year_array)
 
                             if ending_year_array.shape != starting_year_array.shape:
-                                raise NameError('ending_year_array.shape != starting_year_array.shape: ' + str(ending_year_array.shape) + ' != ' + str(starting_year_array.shape) + '. This means that the coarse definition of the scenario that you are subtracting from the coarse definition of the baseline is mixing resolutions. You probably want to resample one of the two layers first.') 
+                                raise NameError('ending_year_array.shape != starting_year_array.shape: ' + str(ending_year_array.shape) + ' != ' + str(starting_year_array.shape) + '. This means that the coarse definition of the scenario that you are subtracting from the coarse definition of the baseline is mixing resolutions. You probably want to resample one of the two layers first.')
                             current_array = (ending_year_array - starting_year_array) * ha_per_cell_array
 
                             hb.save_array_as_geotiff(current_array, current_ending_year_dst_path, p.aoi_ha_per_cell_coarse_path)
 
                         previous_year = year
-                    

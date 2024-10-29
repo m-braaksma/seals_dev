@@ -1,30 +1,33 @@
 # initialize_project defines the run() command for the whole project, which takes the project object as its only function.
 
+import os
+import sys
+
 import hazelbean as hb
+import pandas as pd
+import seals_tasks
+from hazelbean import cloud_utils
+
+from . import config
+from . import seals_generate_base_data
+from . import seals_main
+from . import seals_process_coarse_timeseries
+from . import seals_utils
+from . import seals_visualization_tasks
+from .seals_utils import download_google_cloud_blob
+
 # conda_envs_with_cython = hb.check_which_conda_envs_have_library_installed('cython')
 # print(conda_envs_with_cython)
 
 
-import os, sys
-import hazelbean as hb
-from hazelbean import cloud_utils
-import pandas as pd
-
-from seals import seals_main
-import seals_utils
-import seals_generate_base_data
-import seals_process_coarse_timeseries
-import seals_visualization_tasks
-import config
-from seals_utils import download_google_cloud_blob
-import seals_tasks
 
 
-def set_advanced_options(p):       
-    
+
+def set_advanced_options(p):
+
     p.build_overviews_and_stats = 0  # For later fast-viewing, this can be enabled to write ovr files and geotiff stats files. NYI anywhere.
     p.force_to_global_bb = 0
-    p.plotting_level = 0 
+    p.plotting_level = 0
 
     p.cython_reporting_level = 0
     p.calibration_cython_reporting_level = 0
@@ -37,7 +40,7 @@ def set_advanced_options(p):
     p.num_workers = None  # None sets it to max available. Otherwise, set to an integer.
 
     # Determine if overviews should be written.
-    p.write_global_lulc_overviews_and_tifs = True    
+    p.write_global_lulc_overviews_and_tifs = True
 
     # Specifies which sigmas should be used in a gaussian blur of the class-presence tifs in order to regress on adjacency.
     # Note this will have a huge impact on performance as full-extent gaussian blurs for each class will be generated for
@@ -46,7 +49,7 @@ def set_advanced_options(p):
     p.gaussian_sigmas_to_test = [1, 5]
 
     # There are still multiple ways to do the allocation. Unless we input a fully-defined
-    # change matrix, there will always be ambiguities. One way of lessening them is to 
+    # change matrix, there will always be ambiguities. One way of lessening them is to
     # switch from the default allocation method (just do positive allocation requests)
     # to one that also increases the total goal when some other class
     # goes on it. Allowing it leads to a greater amount of the requested allocation
@@ -60,8 +63,8 @@ def set_advanced_options(p):
     # If True, will load that which was calculated in the calibration run.
     p.use_calibration_created_coefficients = 0
 
-    
-    # Sometimes runs fail mid run. This checks for that and picks up where there is a completed file for that zone. 
+
+    # Sometimes runs fail mid run. This checks for that and picks up where there is a completed file for that zone.
     # However doing so can cause confusing cache-invalidation situations for troubleshooting so it's off by default.
     p.skip_created_downscaling_zones = 0
 
@@ -73,41 +76,41 @@ def set_advanced_options(p):
     # On the stitched_lulc_simplified_scenarios task, optionally clip it to the aoi. Be aware that this
     # means you can no longer user it in Pyramid-style operations (basically all besides zonal stats).
     p.clip_to_aoi = 1
-    
+
     ### ------------------- SET UNUSED ATTRIBUTES TO NONE ------------------- ###
-    
+
     if not hasattr(p, 'subset_of_blocks_to_run'):
         p.subset_of_blocks_to_run = None # No subset
 
 
 def initialize_scenario_definitions(p):
-    
-    # If the scenarios csv doesn't exist, generate it and put it in the input_dir 
+
+    # If the scenarios csv doesn't exist, generate it and put it in the input_dir
     if not hb.path_exists(p.scenario_definitions_path):
-        
+
         # Before generating a new scenarios file, check if there's not one in the base data with the matching name.
         possible_path = p.get_path('seals', 'default_inputs', p.scenario_definitions_filename)
         if hb.path_exists(possible_path):
             hb.path_copy(possible_path, p.scenario_definitions_path)
-            
+
         # If theres truly nothing in the base data, generate it for the default.
-        else:        
+        else:
             # There are multiple scenario_csv generator functions. Here we use the default.
             seals_utils.set_attributes_to_dynamic_default(p) # Default option
 
             # Once the attributes are set, generate the scenarios csv and put it in the input_dir.
             seals_utils.generate_scenarios_csv_and_put_in_input_dir(p)
-        
+
         # After writing, read it it back in, cause this is how other attributes might be modified
         p.scenarios_df = pd.read_csv(p.scenario_definitions_path)
     else:
-        # Read in the scenarios csv and assign the first row to the attributes of this object (in order to setup additional 
+        # Read in the scenarios csv and assign the first row to the attributes of this object (in order to setup additional
         # project attributes like the resolutions of the fine scale and coarse scale data)
         p.scenarios_df = pd.read_csv(p.scenario_definitions_path)
 
     # Set p attributes from df (but only the first row, cause its for initialization)
     for index, row in p.scenarios_df.iterrows():
-        
+
         # NOTE! This also downloads any files references in the csv
         seals_utils.assign_df_row_to_object_attributes(p, row)
         break # Just get first for initialization.
@@ -118,8 +121,8 @@ def initialize_scenario_definitions(p):
     p.calibration_parameters_override_dict = {}
     # p.calibration_parameters_override_dict['rcp45_ssp2'][2030]['BAU'] = os.path.join(p.input_dir, 'calibration_overrides', 'prevent_cropland_expansion_into_forest.xlsx')
 
-    
-    
+
+
     # Some variables need further processing into attributes, like parsing a correspondence csv into a dict.
     seals_utils.set_derived_attributes(p)
 
@@ -177,7 +180,7 @@ def build_standard_task_tree(p):
     # Define the project AOI
     p.project_aoi_task = p.add_task(seals_tasks.project_aoi)
 
-    ##### FINE PROCESSED INPUTS #####    
+    ##### FINE PROCESSED INPUTS #####
     p.fine_processed_inputs_task = p.add_task(seals_generate_base_data.fine_processed_inputs)
     p.generated_kernels_task = p.add_task(seals_generate_base_data.generated_kernels, parent=p.fine_processed_inputs_task, creates_dir=False)
     p.lulc_clip_task = p.add_task(seals_generate_base_data.lulc_clip, parent=p.fine_processed_inputs_task, creates_dir=False)
@@ -192,8 +195,8 @@ def build_standard_task_tree(p):
     p.coarse_simplified_ha_task = p.add_task(seals_process_coarse_timeseries.coarse_simplified_ha, parent=p.coarse_change_task, skip_existing=0)
     p.coarse_simplified_ha_difference_from_previous_year_task = p.add_task(seals_process_coarse_timeseries.coarse_simplified_ha_difference_from_previous_year, parent=p.coarse_change_task, skip_existing=0)
 
-    ##### REGIONAL 
-    p.regional_change_task = p.add_task(seals_process_coarse_timeseries.regional_change)     
+    ##### REGIONAL
+    p.regional_change_task = p.add_task(seals_process_coarse_timeseries.regional_change)
 
     ##### ALLOCATION #####
     p.allocations_task = p.add_iterator(seals_main.allocations)
@@ -206,15 +209,15 @@ def build_standard_task_tree(p):
     ##### VIZUALIZE EXISTING DATA #####
     p.visualization_task = p.add_task(seals_visualization_tasks.visualization)
     p.lulc_pngs_task = p.add_task(seals_visualization_tasks.lulc_pngs, parent=p.visualization_task)
-    
- 
- 
+
+
+
 def build_custom_coarse_algorithm_task_tree(p):
 
     # Define the project AOI
     p.project_aoi_task = p.add_task(seals_tasks.project_aoi)
 
-    ##### FINE PROCESSED INPUTS #####    
+    ##### FINE PROCESSED INPUTS #####
     p.fine_processed_inputs_task = p.add_task(seals_generate_base_data.fine_processed_inputs)
     p.generated_kernels_task = p.add_task(seals_generate_base_data.generated_kernels, parent=p.fine_processed_inputs_task, creates_dir=False)
     p.lulc_clip_task = p.add_task(seals_generate_base_data.lulc_clip, parent=p.fine_processed_inputs_task, creates_dir=False)
@@ -230,14 +233,14 @@ def build_custom_coarse_algorithm_task_tree(p):
     p.coarse_simplified_ha_difference_from_previous_year_task = p.add_task(seals_process_coarse_timeseries.coarse_simplified_ha_difference_from_previous_year, parent=p.coarse_change_task, skip_existing=0)
 
     ##### CUSTOM COARSE ALGORITHM
-    
+
     # Example of updating base_data with a promotion???
     ## Process the IUCN-specific data to be used in SEALS
     # p.biodiversity_task = p.add_task(seals_generate_base_data.biodiversity)
     # p.kbas_task = p.add_task(seals_generate_base_data.kba, parent=p.biodiversity_task)
     # p.star_task = p.add_task(seals_generate_base_data.star, parent=p.biodiversity_task)
-    
-    p.restoration_task = p.add_task(seals_main.restoration)     
+
+    p.restoration_task = p.add_task(seals_main.restoration)
     p.protection_by_aezreg_to_meet_30by30_task = p.add_task(seals_main.protection_by_aezreg_to_meet_30by30, parent=p.restoration_task)
     p.luh_seals_baseline_adjustment_task = p.add_task(seals_main.luh_seals_baseline_adjustment, parent=p.restoration_task)
     p.coarse_simplified_projected_ha_difference_from_previous_year_task = p.add_task(seals_main.coarse_simplified_projected_ha_difference_from_previous_year, parent=p.restoration_task)

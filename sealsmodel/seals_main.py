@@ -1,28 +1,30 @@
 
+import collections
+import copy
+import logging
+import multiprocessing
+import os
+import sys
+import warnings
+from collections import OrderedDict
+
 import hazelbean as hb
+import hazelbean.pyramids
+import matplotlib
+import matplotlib.gridspec as gridspec
+import numpy as np
+import scipy.ndimage
 from Cython.Build import cythonize
+from matplotlib import pyplot as plt
+from mpl_toolkits.axes_grid1.axes_divider import make_axes_locatable
+from osgeo import gdal
+
 # from hazelbean.pyramids import *
 # from hazelbean import *
 
-import collections
-from collections import OrderedDict
-import logging
-import os
-import sys
-import copy
-import warnings
-import numpy as np
-import scipy.ndimage
-from osgeo import gdal
 
-import multiprocessing
-from matplotlib import pyplot as plt
-import matplotlib
-import matplotlib.gridspec as gridspec
-from mpl_toolkits.axes_grid1.axes_divider import make_axes_locatable
 # from seals_visualization_functions import *
 
-import hazelbean.pyramids
 
 # IMPORT NOTE: This shuold not be needed if the user is installing to site-packages via PIP or whatever. However, to link to the developer version,
 # It would always break cross-referencing SEALS vs GTAP-InVEST. Putting this before a relative import fixes it.
@@ -31,14 +33,16 @@ parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(os.path.dirname(os.path.abspath(parent_dir)))
 
 
-import seals_utils
-import pandas as pd
-import time
 import math
+import time
+
+import pandas as pd
+
+from . import seals_utils
 
 try:
-    from setuptools import setup
     from setuptools import Extension
+    from setuptools import setup
 except ImportError:
     from distutils.core import setup
     from distutils.extension import Extension
@@ -49,6 +53,7 @@ L = hb.get_logger()
 env_name = sys.executable.split(os.sep)[-2]
 
 import seals_utils
+
 if env_name is not None:
     try:
         seals_utils.recompile_cython(env_name)
@@ -96,8 +101,8 @@ def full_change_matrices(passed_p=None):
 
                 if p.scenario_type !=  'baseline':
                     for c, year in enumerate(p.years):
-                        
-                        # Get the correct starting year path                        
+
+                        # Get the correct starting year path
                         lulc_1_path = os.path.join(src_dir, 'lulc_' + p.lulc_src_label + '_' + p.lulc_simplification_label + '_' + p.exogenous_label + '_' + p.climate_label + '_' + p.model_label + '_' + p.counterfactual_label + '_' + str(p.years[c-1]) + '.tif')
                         if not hb.path_exists(lulc_1_path):
                             lulc_1_path = os.path.join(src_dir, 'lulc_' + p.lulc_src_label + '_' + p.lulc_simplification_label + '_' + p.model_label + '_' + str(p.key_base_year) + '.tif')
@@ -107,13 +112,13 @@ def full_change_matrices(passed_p=None):
                         #     lulc_1_path = os.path.join(src_dir, 'lulc_baseline_' + p.model_label + '_' + str(p.key_base_year) + '.tif')
                         # else:
                         #     lulc_1_path = os.path.join(src_dir, 'lulc_' + p.exogenous_label + '_' + p.climate_label + '_' + p.model_label + '_' + p.counterfactual_label + '_' + str(p.years[c-1]) + '.tif')
-                        
+
                         lulc_2_path = os.path.join(src_dir, 'lulc_' + p.lulc_src_label + '_' + p.lulc_simplification_label + '_' + p.exogenous_label + '_' + p.climate_label + '_' + p.model_label + '_' + p.counterfactual_label + '_' + str(year) + '.tif')
-                        
+
                         coarse_ha_per_cell_path = p.aoi_ha_per_cell_coarse_path
                         classes_that_might_change = p.changing_class_indices
-                        output_dir = os.path.join(p.cur_dir, str(year))    
-                        
+                        output_dir = os.path.join(p.cur_dir, str(year))
+
                         if not hb.path_exists(output_dir): # Note shortcut of only checking for folder
                             hb.create_directories(output_dir)
                             seals_utils.calc_observed_lulc_change_for_two_lulc_paths(lulc_1_path, lulc_2_path, coarse_ha_per_cell_path, classes_that_might_change, output_dir)
@@ -124,7 +129,7 @@ def target_zones_matrices(p):
 
         if p.scenario_definitions_path is not None:
             p.scenarios_df = pd.read_csv(p.scenario_definitions_path)
-            
+
             for index, row in p.scenarios_df.iterrows():
                 seals_utils.assign_df_row_to_object_attributes(p, row)
                 seals_utils.set_derived_attributes(p)
@@ -136,14 +141,14 @@ def target_zones_matrices(p):
                         target_zones = p.global_processing_blocks_list
                         offsets = [p.global_coarse_blocks_list[0]]
                         offsets = [[int(i) for i in j] for j in target_zones]
-                    
+
                     elif zones_to_plot == 'four':
                         target_zones = [p.global_processing_blocks_list[0], p.global_processing_blocks_list[int(len(p.global_processing_blocks_list)/4)], p.global_processing_blocks_list[int(len(p.global_processing_blocks_list)/2)], p.global_processing_blocks_list[int(len(p.global_processing_blocks_list)*3/4)]]
                         offsets = [p.global_coarse_blocks_list[0]]
                         offsets = [[int(i) for i in j] for j in target_zones]
-                    
 
-                    
+
+
                     elif zones_to_plot == 'first':
                         target_zones = [p.global_processing_blocks_list[0]]
                         offsets = [p.global_coarse_blocks_list[0]]
@@ -151,21 +156,21 @@ def target_zones_matrices(p):
                     else:
                         raise ValueError('zones_to_plot must be one of first, all, or four')
 
-                            
+
                     # full_change_matrix_no_diagonal = hb.as_array(full_change_matrix_no_diagonal_path)
-                    
+
                     for c, offset in enumerate(offsets):
                         target_zone = target_zones[c]
                         target_zone_string = str(target_zone)
                         # target_zone_string = target_zone[0] + '_' + target_zone[1]
-                        
+
                         # full_change_matrix_no_diagonal = hb.load_geotiff_chunk_by_cr_size(full_change_matrix_no_diagonal_path, offset)
                         # src_dir = os.path.join(p.allocation_dir, p.exogenous_label, p.climate_label, p.model_label, p.counterfactual_label, str(p.year), offset[0] + '_' + offset[1])
                         for year_c, year in enumerate(p.years):
-                            src_dir = os.path.join(p.intermediate_dir, 'allocations', p.exogenous_label, p.climate_label, p.model_label, p.counterfactual_label, str(year), 'allocation_zones', target_zone_string, 'allocation') 
+                            src_dir = os.path.join(p.intermediate_dir, 'allocations', p.exogenous_label, p.climate_label, p.model_label, p.counterfactual_label, str(year), 'allocation_zones', target_zone_string, 'allocation')
 
 
-                            # Get the correct starting year path                        
+                            # Get the correct starting year path
                             lulc_1_path = os.path.join(src_dir, 'lulc_' + p.lulc_src_label + '_' + p.lulc_simplification_label + '_' + p.exogenous_label + '_' + p.climate_label + '_' + p.model_label + '_' + p.counterfactual_label + '_' + str(p.years[c-1]) + '.tif')
                             if not hb.path_exists(lulc_1_path):
                                 if year_c == 0:
@@ -177,20 +182,20 @@ def target_zones_matrices(p):
 
                                 else:
                                     previous_year = p.years[year_c - 1]
-                                    correct_dir_year = previous_year 
+                                    correct_dir_year = previous_year
                                     previous_dir = os.path.join(p.intermediate_dir, 'allocations', p.exogenous_label, p.climate_label, p.model_label, p.counterfactual_label, str(correct_dir_year), 'allocation_zones', target_zone_string, 'allocation')
                                     lulc_1_path = os.path.join(previous_dir, 'lulc_' + p.lulc_src_label + '_' + p.lulc_simplification_label + '_' + p.exogenous_label + '_' + p.climate_label + '_' + p.model_label + '_' + p.counterfactual_label + '_' + str(previous_year) + '.tif')
 
 
-                                
-      
+
+
                             # if lulc_1_path is None:
                             #     lulc_1_path = os.path.join(src_dir, 'lulc_' + p.lulc_src_label + '_' + p.lulc_simplification_label + '_' + p.model_label + '_' + str(p.key_base_year) + '.tif')
                             # else:
                             #     lulc_1_path = os.path.join(src_dir, 'lulc_' + p.lulc_src_label + '_' + p.lulc_simplification_label + '_' + p.exogenous_label + '_' + p.climate_label + '_' + p.model_label + '_' + p.counterfactual_label + '_' + str(p.years[c-1]) + '.tif')
-                            
+
                             lulc_2_path = os.path.join(src_dir, 'lulc_' + p.lulc_src_label + '_' + p.lulc_simplification_label + '_' + p.exogenous_label + '_' + p.climate_label + '_' + p.model_label + '_' + p.counterfactual_label + '_' + str(year) + '.tif')
-                            
+
                             coarse_ha_per_cell_path = p.aoi_ha_per_cell_coarse_path
                             classes_that_might_change = p.changing_class_indices
                             output_dir = os.path.join(p.cur_dir, str(year))
@@ -567,10 +572,10 @@ def calibration_prepare_lulc(passed_p=None):
     full_change_matrix_no_diagonal_path = os.path.join(p.cur_dir, 'full_change_matrix_no_diagonal.tif')
 
     if p.run_this:
-        from hazelbean.calculation_core.cython_functions import calc_change_matrix_of_two_int_arrays
+        from hazelbean.calculation_core.cython_functions import \
+            calc_change_matrix_of_two_int_arrays
 
         # Clip ha_per_cell and use it as the match
-
         # TODOO Is this needed? delete if so.
         chunk_ha_per_cell_coarse = hb.load_geotiff_chunk_by_cr_size(p.aoi_ha_per_cell_coarse_path, p.processing_blocks_list, output_path=p.chunk_ha_per_cell_course_path)
 
@@ -738,9 +743,8 @@ def calibration_zones_logit(passed_p=None):
 
     if p.run_this:
         import hazelbean.stats
-        from hazelbean.stats import RegressionFrame
-
         import sklearn.model_selection
+        from hazelbean.stats import RegressionFrame
 
 
         starting_coefficients_path = p.local_data_regressors_starting_values_path
@@ -1427,33 +1431,33 @@ def allocations(p):
             # p.regional_projections_input_path
             if p.scenario_type != 'baseline':
                 # years = str(row['years']).split(' ')
-                
-                    
+
+
                 for c, year in enumerate(p.years):
                     if hasattr(p, 'regional_projections_input_path'):
 
                         if p.regional_projections_input_path:
                             got_path = p.get_path(p.regional_projections_input_path)
-                            task_dir = os.path.join(p.intermediate_dir, p.regional_projections_input_path)                            
+                            task_dir = os.path.join(p.intermediate_dir, p.regional_projections_input_path)
 
-                        
+
                             if hb.path_exists(got_path): # If it's a path, it is required to be based on the regional_change_dir task
                                 projected_coarse_change_dir = os.path.join(p.regional_change_dir, p.exogenous_label, p.climate_label, p.model_label, p.counterfactual_label, str(year))
                             elif hb.path_exists(task_dir): # if it's a task that exists on the task tree, then that is the scenario root.
                                 projected_coarse_change_dir = os.path.join(task_dir, p.exogenous_label, p.climate_label, p.model_label, p.counterfactual_label, str(year))
                             else:
                                 raise NotImplementedError('No interpretation found for regional_projections_input_path of ' + p.regional_projections_input_path)
-                            
+
                         else:
                             projected_coarse_change_dir = os.path.join(p.intermediate_dir, 'coarse_change', 'coarse_simplified_ha_difference_from_previous_year', p.exogenous_label, p.climate_label, p.model_label, p.counterfactual_label, str(year))
 
-                    
-                    else: # If it's blank, then assume there is no regional change projected and it is only run with a coarse_projected. Might need to rename this.                        
+
+                    else: # If it's blank, then assume there is no regional change projected and it is only run with a coarse_projected. Might need to rename this.
                         projected_coarse_change_dir = os.path.join(p.intermediate_dir, 'coarse_change', 'coarse_simplified_ha_difference_from_previous_year', p.exogenous_label, p.climate_label, p.model_label, p.counterfactual_label, str(year))
 
                     coarse_match_path = p.ha_per_cell_coarse_path
                     coarse_resolution = hb.get_cell_size_from_path(coarse_match_path)
-                    
+
                     # TODOOO, this got resent when called assign_df_row_to_object_attributes()
                     fine_resolution = hb.get_cell_size_from_path(p.base_year_lulc_path)
 
@@ -1740,7 +1744,7 @@ def allocation_zones(p):
 
 def allocation(passed_p=None):
     # Actually do the allocation
-    
+
     if passed_p is None:
         global p
     else:
@@ -1757,7 +1761,7 @@ def allocation(passed_p=None):
     p.lulc_ndv = hb.get_ndv_from_path(p.aoi_lulc_simplified_paths[p.key_base_year])
 
     p.loss_function_sigma = np.float64(7.0) # Set how much closeness vs farness matters in assessing accuracy. Sigma = 1 means you need to be REALLY close to count as a food prediction.
-    
+
     # Load the coefficients as DF from either calibration dir or a prebuilt dir.
     zone_string = os.path.split(p.cur_dir_parent_dir)[1]
     if p.calibration_parameters_source == 'calibration_task':
@@ -1899,29 +1903,29 @@ def allocation(passed_p=None):
         skip_this_zone = False
 
     if p.run_this and not skip_this_zone:
-        
+
         # Tricky logic here: I implemented an optimization that skips doing zones that have no change. But this means
-        # that the previous year lulc will not always be there. The logic below finds the most recent LULC map that 
+        # that the previous year lulc will not always be there. The logic below finds the most recent LULC map that
         # exists, reverting to the key_base_year if needed.
         previous_year_dir = p.cur_dir.replace('\\', '/').replace('/' + str(p.year) + '/', '/' + str(p.previous_year) + '/')
         if p.previous_year in p.lulc_simplified_paths: # Then it is the base year
-            
+
             # On the first year, we need to clip from the AOI-wide LULC to the current processing tile.
             aoi_previous_year_path = p.lulc_simplified_paths[p.previous_year]
-            
+
             # HACK IUCN. This can only be dealt with by fixing/eliminating the lulc_simplified_paths[] dicts
             if 'restoration' in p.scenario_label:
                 clipped_path = os.path.join(p.cur_dir, 'base_lulc.tif')
                 hb.clip_raster_by_bb(p.base_year_lulc_path, p.bb, clipped_path)
                 aoi_previous_year_path = clipped_path
                 # still need to clip tho
-                
-      
-            
-            tile_starting_lulc_path = os.path.join(p.cur_dir, 'lulc_' + p.lulc_src_label + '_' + p.lulc_simplification_label + '_' + p.model_label + '_' + str(p.key_base_year) + '.tif')
-            
 
-            
+
+
+            tile_starting_lulc_path = os.path.join(p.cur_dir, 'lulc_' + p.lulc_src_label + '_' + p.lulc_simplification_label + '_' + p.model_label + '_' + str(p.key_base_year) + '.tif')
+
+
+
             lulc_baseline_array = hb.load_geotiff_chunk_by_cr_size(aoi_previous_year_path, p.fine_blocks_list, output_path=tile_starting_lulc_path).astype(np.int64)
             tile_match_path = tile_starting_lulc_path
         else:
@@ -1929,16 +1933,16 @@ def allocation(passed_p=None):
             # On not-first years, we need to reference the previous year's and only write it if writing_level is sufficiently high.
             previous_year_filename = 'lulc_' + p.lulc_src_label + '_' + p.lulc_simplification_label + '_' + p.exogenous_label + '_' + p.climate_label + '_' + p.model_label + '_' + p.counterfactual_label + '_' + str(p.previous_year) + '.tif'
             tile_starting_lulc_path = os.path.join(previous_year_dir, previous_year_filename)
-            
+
             # If the previous year didnt change, then there wont be a file there. In that case, we search for the previous year that DID change.
             if not hb.path_exists(tile_starting_lulc_path):
                 found_it = False
                 reversed_years = p.years.copy()
                 reversed_years.reverse()
-                    
-                for test_year in reversed_years:       
+
+                for test_year in reversed_years:
                     test_year_dir = p.cur_dir.replace('\\', '/').replace('/' + str(p.year) + '/', '/' + str(test_year) + '/')
-                    test_year_filename = 'lulc_' + p.lulc_src_label + '_' + p.lulc_simplification_label + '_' + p.exogenous_label + '_' + p.climate_label + '_' + p.model_label + '_' + p.counterfactual_label + '_' + str(test_year) + '.tif'             
+                    test_year_filename = 'lulc_' + p.lulc_src_label + '_' + p.lulc_simplification_label + '_' + p.exogenous_label + '_' + p.climate_label + '_' + p.model_label + '_' + p.counterfactual_label + '_' + str(test_year) + '.tif'
                     try_path = os.path.join(test_year_dir, test_year_filename)
                     if hb.path_exists(try_path):
                         tile_starting_lulc_path = try_path
@@ -1959,16 +1963,16 @@ def allocation(passed_p=None):
                     aoi_previous_year_path = p.lulc_simplified_paths[p.key_base_year]
                     tile_starting_lulc_path = os.path.join(p.cur_dir, 'lulc_' + p.lulc_src_label + '_' + p.lulc_simplification_label + '_' + p.model_label + '_' + str(p.key_base_year) + '.tif')
                     lulc_baseline_array = hb.load_geotiff_chunk_by_cr_size(aoi_previous_year_path, p.fine_blocks_list, output_path=tile_starting_lulc_path).astype(np.int64)
-                    tile_match_path = tile_starting_lulc_path                    
+                    tile_match_path = tile_starting_lulc_path
 
             lulc_baseline_array = hb.as_array(tile_starting_lulc_path).astype(np.int64)
             tile_match_path = tile_starting_lulc_path
             if p.output_writing_level > 1:
                 if not hb.path_exists(tile_starting_lulc_path):
                     hb.save_array_as_geotiff(lulc_baseline_array, tile_starting_lulc_path, tile_match_path, ndv=p.lulc_ndv, compress=True)
-           
 
-            
+
+
 
         spatial_layer_names = spatial_regressors_df['spatial_regressor_name'].dropna().values
         spatial_layer_paths = spatial_regressors_df['data_location'].dropna().values
@@ -2041,16 +2045,16 @@ def allocation(passed_p=None):
             # path = hb.get_first_extant_path(path, [p.fine_processed_inputs_dir, p.input_dir, p.base_data_dir])
             # if 'binary_esa_seals7_2015_urban' in path:
             #     pass
-        
+
             # if 'soil_organic_content' in path:
             #     pass
-            
+
             # PROBLEM Sometimes it NEEDS to look in fine_processed_inputs_dir, but other times it needs to download it no matter what. how deal with this?
             # Am I possibly using get_path to deal with THREE types of data
             # 1. Data that needs to be created
             # 2. Data that needs t be put in base_data_dir
             # I confused....
-            possible_dirs = [p.intermediate_dir, p.fine_processed_inputs_dir, p.input_dir, p.base_data_dir] 
+            possible_dirs = [p.intermediate_dir, p.fine_processed_inputs_dir, p.input_dir, p.base_data_dir]
             path = p.get_path(path, possible_dirs=possible_dirs)
             current_bb = hb.get_bounding_box(path)
 
@@ -2104,16 +2108,16 @@ def allocation(passed_p=None):
         # Set how much change for each class needs to be allocated.
         projected_coarse_change_3d = np.zeros((len(changing_class_indices_array), coarse_n_r, coarse_n_c)).astype(np.float64)
         # projected_coarse_change_dir = os.path.join(p.coarse_simplified_ha_difference_from_previous_year_dir, p.exogenous_label, p.climate_label, p.model_label, p.counterfactual_label, str(p.year))
-        
-        # HACK IUCN 
+
+        # HACK IUCN
         # TODOOO: Add this functionality in the scenarios csv? Maybe have it be a string to function?
         # if 'restoration' in p.counterfactual_label:
         #     projected_coarse_change_dir = os.path.join(p.coarse_simplified_projected_ha_difference_from_previous_year_dir, p.exogenous_label, p.climate_label, p.model_label, p.counterfactual_label, str(p.year))
-                                                       
-                                                       
+
+
         filename_end = '_' + str(p.year) + '_' + str(p.previous_year) + '_ha_diff_'  + p.exogenous_label + '_' + p.climate_label + '_' + p.model_label + '_' + p.counterfactual_label + '.tif'
         projected_coarse_change_paths = [os.path.join(p.projected_coarse_change_dir, i + filename_end) for i in p.changing_class_labels]
-        
+
 
         for c, path in enumerate(projected_coarse_change_paths):
         # for c, path in enumerate(list(p.projected_coarse_change_files[p.current_scenario_pairing_label][p.current_year][p.current_policy_scenario_label].values())):
@@ -2195,13 +2199,13 @@ def allocation(passed_p=None):
         generated_projection = hb.common_projection_wkts['wgs84']
         lulc_projected_array = lulc_projected_array.astype(np.int8)
         hb.save_array_as_geotiff(lulc_projected_array, lulc_projected_path, tile_match_path, projection_override=generated_projection, ndv=255, data_type=1, compress=True, verbose=False)
-        
+
         # lulc_baseline_path = os.path.join(p.cur_dir, 'lulc_' + p.lulc_simplification_label + '_baseline_' + p.model_label + '_' + str(p.year) + '.tif')
         # # lulc_baseline_path = os.path.join(p.cur_dir, 'lulc_' + p.lulc_simplification_label + '_' + p.exogenous_label + '_' + p.climate_label + '_' + p.model_label + '_' + p.counterfactual_label + '_' + str(p.year) + '.tif')
         # if p.output_writing_level >= 1:
         #     if not hb.path_exists(lulc_baseline_path):
         #         hb.save_array_as_geotiff(lulc_baseline_array, lulc_baseline_path, tile_match_path, projection_override=generated_projection, ndv=255, data_type=1, compress=True, verbose=False)
-        
+
         if p.output_writing_level >= 1:
             change_year_path = os.path.join(p.cur_dir, 'change_year.tif')
             if not hb.path_exists(change_year_path):
@@ -2209,12 +2213,12 @@ def allocation(passed_p=None):
                 for c, class_id in enumerate(p.changing_class_indices):
                     change_year_array += np.where(output_change_arrays[c] == 1, p.year, 0)
                 hb.save_array_as_geotiff(change_year_array, change_year_path, tile_match_path, projection_override=generated_projection, ndv=-9999, data_type=5, compress=True, verbose=False)
-            
+
         if p.output_writing_level >= 1:
             change_happened_path = os.path.join(p.cur_dir, 'change_happened.tif')
             if not hb.path_exists(change_happened_path):
                 hb.save_array_as_geotiff(change_happened, change_happened_path, tile_match_path, projection_override=generated_projection, ndv=-9999, data_type=5, compress=True, verbose=False)
-       
+
         if p.output_writing_level >= 5:
             for i, label in enumerate(p.changing_class_labels):
                 hb.save_array_as_geotiff(output_change_arrays[i], os.path.join(p.cur_dir, 'allocations_for_class_' + p.changing_class_labels[i] + '.tif'), tile_match_path)
@@ -2223,7 +2227,7 @@ def allocation(passed_p=None):
                 # hb.show(output_change_arrays[i], output_path=hb.ruri(os.path.join(output_dir, 'allocations_for_class_' + str(i) + '.png')), vmin=0, vmax=1, title='allocations for class ' + str(i))
         # if p.output_writing_level >= 4:
         #     hb.save_array_as_geotiff(projected_lulc, hb.suri(os.path.join(output_dir, 'projected_lulc.tif'), call_string), output_match_path)
-            
+
 
         # This is the one other required written file because it is used in the next iteration.
         cumulative_change_happened_path = os.path.join(p.cur_dir, 'cumulative_change_happened.tif')
@@ -2234,15 +2238,16 @@ def allocation(passed_p=None):
             if p.output_writing_level >= 5:
                 validation_dir = os.path.join(p.cur_dir, 'validation')
                 hb.create_directories(validation_dir)
-                from hazelbean.calculation_core import aspect_ratio_array_functions 
-                
+                from hazelbean.calculation_core import \
+                    aspect_ratio_array_functions
+
                 # import upscale_retaining_sum
                 for c, class_label in enumerate(p.changing_class_labels):
                     projected_recoarsening_path = os.path.join(validation_dir, class_label + '_allocated_prop.tif')
                     hb.create_directories(projected_recoarsening_path)
                     if not hb.path_exists(projected_recoarsening_path):
                         target_value = p.changing_class_indices[c]
-                        
+
                         upscale_factor = int(p.coarse_resolution / p.fine_resolution)
 
                         was_class = np.where(lulc_baseline_array == target_value, 1, 0).astype(np.float64)
@@ -2253,7 +2258,7 @@ def allocation(passed_p=None):
                         hectares_per_grid_cell_upscaled = aspect_ratio_array_functions.upscale_using_mean(hectares_per_grid_cell, upscale_factor)
                         net = is_class_coarse - was_class_coarse
                         net_ha = net * hectares_per_grid_cell_upscaled
-                        
+
 
                         hb.save_array_as_geotiff(net_ha, projected_recoarsening_path, block_ha_per_cell_coarse_path, projection_override=generated_projection, ndv=-9999, data_type=5, compress=True, verbose=False)
 
@@ -2272,8 +2277,8 @@ def stitched_lulc_simplified_scenarios(p):
     the Falklands either, though.)"""
 
     if p.run_this:
-        
-        
+
+
         vrt_paths_to_remove = []
         for index, row in p.scenarios_df.iterrows():
             seals_utils.assign_df_row_to_object_attributes(p, row)
@@ -2289,7 +2294,7 @@ def stitched_lulc_simplified_scenarios(p):
 
                     p.layers_to_stitch = hb.list_filtered_paths_recursively(target_dir, include_strings=include_string, include_extensions='.tif', depth=None)
 
-                    
+
                     stitched_output_name = 'lulc_' + p.lulc_src_label + '_' + p.lulc_simplification_label + '_' + p.exogenous_label + '_' + p.climate_label + '_' + p.model_label + '_' + p.counterfactual_label + '_' + str(year)
 
 
@@ -2331,15 +2336,15 @@ def stitched_lulc_simplified_scenarios(p):
                                 # We stil need something to stamp onto so that non-allocated locations still have values,
                                 # but this needs to be clipped to size.
                                 # p.local_output_base_map_path = os.path.join(p.cur_dir, 'lulc_' + p.baseline_reference_label + '_' + str(p.key_base_year) + '.tif')
-                                
-                                baseline_model_label = p.scenarios_df.loc[p.scenarios_df['scenario_label'] == p.baseline_reference_label, 'model_label'].values[0]                                
-                                baseline_filename = 'lulc_' + p.lulc_src_label + '_' + p.lulc_simplification_label + '_' + str(p.key_base_year) + '.tif'  
+
+                                baseline_model_label = p.scenarios_df.loc[p.scenarios_df['scenario_label'] == p.baseline_reference_label, 'model_label'].values[0]
+                                baseline_filename = 'lulc_' + p.lulc_src_label + '_' + p.lulc_simplification_label + '_' + str(p.key_base_year) + '.tif'
                                 stub_path = os.path.join('lulc', p.lulc_src_label, p.lulc_simplification_label, baseline_filename)
-                                # p.local_output_base_map_path = os.path.join(p.cur_dir, 'lulc_' + p.lulc_src_label + '_' + p.lulc_simplification_label + '_' + baseline_model_label + '_' + str(p.key_base_year) + '.tif')  
+                                # p.local_output_base_map_path = os.path.join(p.cur_dir, 'lulc_' + p.lulc_src_label + '_' + p.lulc_simplification_label + '_' + baseline_model_label + '_' + str(p.key_base_year) + '.tif')
                                 local_output_base_map_path = p.get_path(stub_path, prepend_possible_dirs=p.fine_processed_inputs_dir)
-                                
-                                
-                                
+
+
+
                                 lu_classes_ha_csv_path = os.path.join(p.cur_dir, p.lulc_src_label + '_' + p.lulc_simplification_label + '_' + str(p.key_base_year) + '_lu_classes_ha.csv')
                                 # lulc_dir = os.path.join(p.fine_processed_inputs_dir, 'lulc', p.lulc_src_label, p.lulc_simplification_label)
                                 lulc_stub_path = os.path.join('lulc', p.lulc_src_label, p.lulc_simplification_label)
@@ -2379,55 +2384,55 @@ def stitched_lulc_simplified_scenarios(p):
                                     dstnodata=255,
                                 )
 
-                                # baseline_model_label = p.scenarios_df.loc[p.scenarios_df['scenario_label'] == p.baseline_reference_label, 'model_label'].values[0]  
-                                # p.local_output_base_map_path = os.path.join(p.cur_dir, 'lulc_' + p.lulc_src_label + '_' + p.lulc_simplification_label + '_' + baseline_model_label + '_' + str(p.key_base_year) + '.tif')  
+                                # baseline_model_label = p.scenarios_df.loc[p.scenarios_df['scenario_label'] == p.baseline_reference_label, 'model_label'].values[0]
+                                # p.local_output_base_map_path = os.path.join(p.cur_dir, 'lulc_' + p.lulc_src_label + '_' + p.lulc_simplification_label + '_' + baseline_model_label + '_' + str(p.key_base_year) + '.tif')
                                 # if not hb.path_exists(p.local_output_base_map_path):
                                 #     # for base_year in p.base_year:
                                 #     hb.clip_raster_by_bb(p.lulc_simplified_paths[p.key_base_year], p.bb_of_tiles, p.local_output_base_map_path)
                     else:
                         hb.log('Skipping stitching ' + p.lulc_projected_stitched_path + ' because it already exists.')
-                        
+
                     if p.clip_to_aoi and p.aoi != 'global' and hb.path_exists(p.aoi_path):
                         hb.timer('start clip')
                         clipped_path = hb.suri(p.lulc_projected_stitched_path, 'clipped')
                         if not hb.path_exists(clipped_path):
                             hb.clip_raster_by_vector(p.lulc_projected_stitched_path, clipped_path, p.aoi_path)
-                            
+
                             # Generally you don't want to clip the file because it will mess up the bounding box.
                             # hb.displace_file(clipped_path, p.lulc_projected_stitched_path, displaced_path=None, delete_original=True)
-                            
+
                             hb.timer('end clip')
-                    
+
                     if True:
                     # if p.write_global_lulc_overviews_and_tifs:
                         if p.aoi == 'global':
                             hb.make_path_global_pyramid(p.lulc_projected_stitched_path)
-                        
+
         for file_path in vrt_paths_to_remove:
-            hb.remove_path(file_path)   
+            hb.remove_path(file_path)
 
 def luh_seals_baseline_adjustment(p):
     # SHORTCUT, this should have been put in GTAP project but i'm racing.
     if p.run_this:
-        
+
         # Set the coarse_match
         coarse_match_path = p.aoi_ha_per_cell_coarse_path
-        
-        ## --------------- Clip the ids by the BB. ----------------             
+
+        ## --------------- Clip the ids by the BB. ----------------
         # Note sorta unintuitively named load_geotiff_chunk_by_bb actually is just used
         # to save the clipped file, which happens becuase we set an output_path.
         ee_r50_aez18_ids_path = p.get_path("gtap_invest", "region_boundaries", "ee_r50_aez18_ids.tif")
         bb_ee_r50_aez18_ids_path = os.path.join(p.cur_dir, 'bb_ee_r50_aez18_ids_10sec.tif')
         if not hb.path_exists(bb_ee_r50_aez18_ids_path):
             hb.load_geotiff_chunk_by_bb(ee_r50_aez18_ids_path, p.bb, output_path=bb_ee_r50_aez18_ids_path)
-        
+
         # DEVELOPMENT: Still need to document this.
-        # On the outside of each performance-enhancing path_exists call, there are to-be-generated files above but also conditional loads 
+        # On the outside of each performance-enhancing path_exists call, there are to-be-generated files above but also conditional loads
         # below that utilize string vs gpkg differentiation.
         # vector_boundaries_path = p.get_path("gtap_invest", "region_boundaries", "ee_r50_aez18_correspondence.gpkg")
-        # vector_boundaries = vector_boundaries_path          
-        
-        ## --------------- Create coarse zone ids ----------------    
+        # vector_boundaries = vector_boundaries_path
+
+        ## --------------- Create coarse zone ids ----------------
         bb_ee_r50_aez18_ids_15min_path = os.path.join(p.cur_dir, 'bb_ee_r50_aez18_ids_15min.tif')
         if not hb.path_exists(bb_ee_r50_aez18_ids_15min_path):
 
@@ -2447,19 +2452,19 @@ def luh_seals_baseline_adjustment(p):
                         pixel_size_override=None,
                         remove_intermediate_files=False,
                         verbose=False)
-                               
-                    
-        ## --------------- Create lu_classes_num_cells ----------------            
+
+
+        ## --------------- Create lu_classes_num_cells ----------------
         ### NOTE: I did this two different, unexpected ways. I first did the by-class cell count on the binary files. But then
-        # I remembered I could have just used the stats_to_retreive = 'enumeration' option in the zonal statistics function 
+        # I remembered I could have just used the stats_to_retreive = 'enumeration' option in the zonal statistics function
         # which I then used via the multiply_raster_path funciton to get the class_ha
         combined_class_num_cells_path = os.path.join(p.cur_dir, p.lulc_src_label + '_' + p.lulc_simplification_label + '_' + str(p.key_base_year) + '_lu_classes_num_cells.csv')
-        paths_to_merge = []               
-        
+        paths_to_merge = []
+
         if not 0 and hb.path_exists(combined_class_num_cells_path):
-                
+
             for class_c, class_label in enumerate(p.all_class_labels):
-                
+
                 # Calc zonal statistics of given the coarse aez_reg ids from the fine LULC data
                 target_dir = os.path.join(p.fine_processed_inputs_dir, 'lulc', p.lulc_src_label, p.lulc_simplification_label, 'binaries', str(p.key_base_year))
                 target_filename = 'binary_' + p.lulc_src_label + '_' + p.lulc_simplification_label + '_' + str(p.key_base_year) + '_' + class_label + '.tif'
@@ -2491,31 +2496,31 @@ def luh_seals_baseline_adjustment(p):
                                 max_enumerate_value=20000,
                                 use_pygeoprocessing_version=False,
                                 verbose=False,
-                    )             
+                    )
 
             # Merge all of the class specifi n_cells csvs into one
-            hb.df_merge_list_of_csv_paths(paths_to_merge, 
-                                        output_csv_path=combined_class_num_cells_path, 
-                                        on='id', 
+            hb.df_merge_list_of_csv_paths(paths_to_merge,
+                                        output_csv_path=combined_class_num_cells_path,
+                                        on='id',
                                         column_suffix='ignore',
                                         verbose=False)
-        
+
             # Now rename and rewrite binary_esa_seals7_2017_c
             df = pd.read_csv(combined_class_num_cells_path)
             columns = {i: i.replace('_sums', '').replace('binary_' + p.lulc_src_label + '_' + p.lulc_simplification_label + '_' + str(p.key_base_year) + '_', '') for i in df.columns}
             df.rename(columns=columns, inplace=True)
             df = df[['id'] + p.all_class_labels]
-            
+
             # Fill nans with 0
             df.fillna(0, inplace=True)
-            
+
             df.to_csv(combined_class_num_cells_path, index=False)
-            
-            # Remove temp files: 
+
+            # Remove temp files:
             for path in paths_to_merge:
                 hb.path_remove(path)
-            
-            
+
+
         ## --------------- Create lu_classes_ha ----------------
         lu_classes_ha_csv_path = os.path.join(p.cur_dir, p.lulc_src_label + '_' + p.lulc_simplification_label + '_' + str(p.key_base_year) + '_lu_classes_ha.csv')
         # lulc_dir = os.path.join(p.fine_processed_inputs_dir, 'lulc', p.lulc_src_label, p.lulc_simplification_label)
@@ -2526,7 +2531,7 @@ def luh_seals_baseline_adjustment(p):
         if not hb.path_exists(lu_classes_ha_csv_path):
             hb.zonal_statistics(
                         lulc_path,
-                        zones_vector_path=None, 
+                        zones_vector_path=None,
                         id_column_label='ee_r50_aez18_id',
                         zone_ids_raster_path=bb_ee_r50_aez18_ids_path,
                         stats_to_retrieve='enumeration',
@@ -2548,26 +2553,26 @@ def luh_seals_baseline_adjustment(p):
                         use_pygeoprocessing_version=False,
                         verbose=False,
             )
-            
+
             # Reorder, clean and resave
             df = pd.read_csv(lu_classes_ha_csv_path)
             if 'id' not in df.columns:
                 df['id'] = df['id_created']
             df = df[['id'] + p.all_class_labels]
-            df.fillna(0, inplace=True)                
+            df.fillna(0, inplace=True)
             df.to_csv(lu_classes_ha_csv_path, index=False)
-            
+
 
         ## --------------- Create zonal sum of LUH pprojection ----------------
         coarse_class_ha_path = os.path.join(p.cur_dir, p.coarse_src_label + '_' + p.coarse_simplification_label + '_' + str(p.key_base_year) + '_luh_classes_ha.csv')
         if not hb.path_exists(coarse_class_ha_path):
             paths_to_merge = []
             for class_c, class_label in enumerate(p.coarse_correspondence_class_labels):
-                current_dir = os.path.join(p.coarse_simplified_ha_dir, 'baseline', p.model_label, str(p.key_base_year)) 
+                current_dir = os.path.join(p.coarse_simplified_ha_dir, 'baseline', p.model_label, str(p.key_base_year))
                 current_filename = class_label + '_ha_baseline_' + p.model_label + '_' + str(p.key_base_year) + '.tif'
                 current_luh_path = os.path.join(current_dir, current_filename)
                 current_luh_csv_path = os.path.join(p.cur_dir, class_label + '_luh_ha_' + p.exogenous_label + '_' + p.model_label + '_' + str(p.key_base_year) + '.csv')
-                
+
                 paths_to_merge.append(current_luh_csv_path)
                 hb.zonal_statistics(
                             current_luh_path,
@@ -2592,124 +2597,124 @@ def luh_seals_baseline_adjustment(p):
                             max_enumerate_value=20000,
                             use_pygeoprocessing_version=False,
                             verbose=False,
-                        )  
-                
+                        )
+
                 # Drop the 0 column
                 df = pd.read_csv(current_luh_csv_path)
                 df = df.drop('0', axis=1)
-                df.to_csv(current_luh_csv_path, index=False)               
+                df.to_csv(current_luh_csv_path, index=False)
 
-        
+
             # Merge all of the class specifi n_cells csvs into one
-            hb.df_merge_list_of_csv_paths(paths_to_merge, 
-                                        output_csv_path=coarse_class_ha_path, 
-                                        on='id', 
+            hb.df_merge_list_of_csv_paths(paths_to_merge,
+                                        output_csv_path=coarse_class_ha_path,
+                                        on='id',
                                         column_suffix='ignore',
                                         verbose=False)
-        
+
             # Now rename and rewrite binary_esa_seals7_2017_[class]
             df = pd.read_csv(coarse_class_ha_path)
             columns = {i: i.replace('_ha_baseline_' + p.model_label + '_' + str(p.key_base_year) + '_sums', '') for i in df.columns}
             df.rename(columns=columns, inplace=True)
             df = df[['id'] + p.coarse_correspondence_class_labels]
-            
+
             # Fill nans with 0
             df.fillna(0, inplace=True)
-            
+
             df.to_csv(coarse_class_ha_path, index=False)
-            
-            # Remove temp files: 
+
+            # Remove temp files:
             for path in paths_to_merge:
                 hb.path_remove(path)
-            
+
         ## --------------- Create difference between Coarse and Fine projections ----------------
         coarse_minus_fine_ha_path = os.path.join(p.cur_dir, 'coarse_minus_fine_ha.csv')
         if not hb.path_exists(coarse_minus_fine_ha_path):
-            coarse_class_ha = pd.read_csv(coarse_class_ha_path)               
-            lu_classes_ha = pd.read_csv(lu_classes_ha_csv_path)                
-            
+            coarse_class_ha = pd.read_csv(coarse_class_ha_path)
+            lu_classes_ha = pd.read_csv(lu_classes_ha_csv_path)
+
             output_df = hb.df_merge(coarse_class_ha, lu_classes_ha, on='id', how='outer', verbose=False)
             output_df.fillna(0, inplace=True)
-            
-            
+
+
             for class_c, class_label in enumerate(p.changing_class_labels):
-                
+
                 output_df[class_label] = output_df[class_label + '_x'] - output_df[class_label + '_y']
 
             output_df = output_df[['id'] + p.changing_class_labels]
-            
+
             # Write to file
             output_df.to_csv(coarse_minus_fine_ha_path, index=False)
 
-                
+
 
         # ## ----------------- Create a shifter  of the difference between coarse and fine by zone, which will eventually be used to make the coarse have the same totals as the fine
         # baseline_correction_shifter_paths = [os.path.join(p.cur_dir, 'baseline_correction_shifter_' + i + '.tif') for i in p.changing_class_labels]
         # if not hb.path_all_exist(baseline_correction_shifter_paths):
         #     df = pd.read_csv(coarse_minus_fine_ha_path)
         #     id_values = df['id'].values
-            
+
         #     combined_class_num_cells = pd.read_csv(combined_class_num_cells_path)
-            
+
         #     for class_c, class_label in enumerate(p.changing_class_labels):
         #         n_cells = combined_class_num_cells[class_label].values
         #         values = df[class_label].values
-                
+
         #         hb.log('Shifting for ', class_label)
         #         hb.log('values', values)
         #         hb.log('n_cells', n_cells)
-                
+
         #         shift_list = np.where((values != 0) & (n_cells != 0), values / n_cells, 0)
         #         hb.log('shift_list', shift_list)
         #         # shift_list = [values[i] / n_cells[i] for i in range(len(id_values))]
         #         reclassify_rules = {id_values[i]: shift_list[i] for i in range(len(id_values))}
         #         hb.reclassify_raster_hb(bb_ee_r50_aez18_ids_15min_path, reclassify_rules, baseline_correction_shifter_paths[class_c], 6, -9999)
-            
+
         # ## --------------- Shift the coarse raster by the shifter above ----------------
         # shifted_coarse_paths = [os.path.join(p.cur_dir, p.coarse_src_label + '_corrected_' + i + '.tif') for i in p.changing_class_labels]
         # if not hb.path_all_exist(shifted_coarse_paths):
         #     def do_the_shift(a, b):
         #         return a - b
-            
-            
+
+
         #     for class_c, class_label in enumerate(p.changing_class_labels):
         #         hb.log('Shifting class ' + class_label + ' by the shifter')
         #         current_input_list = [os.path.join(p.coarse_simplified_ha_dir, 'baseline', p.model_label, str(p.key_base_year), class_label + '_ha_baseline_' + p.model_label + '_' + str(p.key_base_year) + '.tif'), baseline_correction_shifter_paths[class_c]]
         #         hb.raster_calculator_flex(current_input_list, do_the_shift, shifted_coarse_paths[class_c], datatype=5, ndv=-9999., gtiff_creation_options=None, add_overviews=False)
 
 
-            
-            
+
+
         # ## --------------- Diagnose any weird things about the totals between fine and coarse ---------------
-        
+
         # coarse_fine_diagnostic_report_path = os.path.join(p.cur_dir, 'coarse_fine_diagnostic_report.csv')
         # if not 0 and hb.path_exists(coarse_fine_diagnostic_report_path):
         #     hb.log('Creating diagnostic report for fine and coarse totals for scenarios ' + str(p.scenario_label) + ' ' + str(p.years))
-        #     coarse_class_ha = pd.read_csv(coarse_class_ha_path)               
+        #     coarse_class_ha = pd.read_csv(coarse_class_ha_path)
         #     lu_classes_ha = pd.read_csv(lu_classes_ha_csv_path)
         #     coarse_minus_fine_ha = pd.read_csv(coarse_minus_fine_ha_path)
-            
-            
+
+
         #     overall_difference = 0
         #     total_fine_ha = 0
         #     for class_c, class_label in enumerate(p.changing_class_labels):
 
-                
+
         #         coarse_sum = coarse_class_ha[class_label].sum()
         #         fine_sum = lu_classes_ha[class_label].sum()
         #         implied_diff = coarse_sum - fine_sum
-        #         diff_sum = coarse_minus_fine_ha[class_label].sum()     
-                
+        #         diff_sum = coarse_minus_fine_ha[class_label].sum()
+
         #         overall_difference += implied_diff
         #         total_fine_ha += fine_sum
-                
+
         #         if abs(implied_diff - diff_sum) > .001:
         #             hb.log('Class: ' + class_label + ' had different sums!!!' + ' Coarse sum: ' + str(coarse_sum) + ' Fine sum: ' + str(fine_sum) + ' Implied diff: ' + str(implied_diff) + ' Diff sum: ' + str(diff_sum))
-                
+
         #         percent_difference = (coarse_sum - fine_sum) / fine_sum * 100
-                
+
         #         hb.log('Class: ' + class_label + ' Coarse sum: ' + str(coarse_sum) + ' Fine sum: ' + str(fine_sum) + ' Diff sum: ' + str(diff_sum)+ ' Percent diff: ' + str(percent_difference))
-            
+
         #     hb.log('Overall difference: ' + str(overall_difference) + ' Total fine ha: ' + str(total_fine_ha) + ' Percent diff: ' + str(overall_difference / total_fine_ha * 100))
 
 def iucn_30by30_scenarios(p):
@@ -2720,17 +2725,17 @@ def restoration(p):
 
 def protection_by_aezreg_to_meet_30by30(p):
     # Creates a CSV by AEZReg of the protection needed to meet 30by30
-    
+
     # Key output here will be used to generate CSVs of the protection needed by zone.
     p.protection_by_aezreg_to_meet_30by30_path = os.path.join(p.cur_dir, 'protection_by_aezreg_to_meet_30by30.csv')
-    
+
     if p.run_this:
-                
-        # Make coarse res (15 min manuually here) zone ids, This should be put into base data                
+
+        # Make coarse res (15 min manuually here) zone ids, This should be put into base data
         ee_r50_aez18_ids_path = p.get_path('gtap_invest', 'region_boundaries', 'ee_r50_aez18_ids.tif')
         ee_r50_aez18_ids_15min_path = os.path.join(p.cur_dir, 'ee_r50_aez18_ids_15min.tif')
         # ee_r50_aez18_ids_15min_path = p.get_path('ee_r50_aez18_ids_15min.tif')
-        
+
         # resample to 15min
         if not hb.path_exists(ee_r50_aez18_ids_15min_path):
             hb.resample_to_match_pyramid(ee_r50_aez18_ids_path,
@@ -2750,12 +2755,12 @@ def protection_by_aezreg_to_meet_30by30(p):
                     remove_intermediate_files=False,
                     verbose=False)
 
-        
+
         # Key input here takes from ECN data
-        
+
         # existing hectares protected
         protected_areas_all_baseline_300sec_path = p.get_path('gtap_invest', 'projects', 'economic_case_for_nature', 'protected_areas_all_baseline_hectares_300sec.tif')
-        
+
         # Resample existing hectares to coarse res
         protected_areas_all_baseline_15min_path = os.path.join(p.cur_dir, 'protected_areas_all_baseline_15min.tif')
         if not hb.path_exists(protected_areas_all_baseline_15min_path):
@@ -2765,11 +2770,11 @@ def protection_by_aezreg_to_meet_30by30(p):
                     resample_method='bilinear',
                     output_data_type=6,
                     )
-        
-        
+
+
         # new hectares to protect
         ha_to_protect_300sec_path = p.get_path('gtap_invest', 'projects', 'economic_case_for_nature', 'ha_to_protect.tif')
-        
+
         # Resample new hectares to coarse res
         ha_to_protect_15min_path = os.path.join(p.cur_dir, 'ha_to_protect_15min.tif')
         if not hb.path_exists(ha_to_protect_15min_path):
@@ -2779,49 +2784,49 @@ def protection_by_aezreg_to_meet_30by30(p):
                     resample_method='bilinear',
                     output_data_type=6,
                     )
-            
+
         # Calculate zonal sums of existing protected ha
         protected_areas_all_baseline_sums_path = os.path.join(p.cur_dir, 'protected_areas_all_baseline_sums.csv')
-        if not hb.path_exists(protected_areas_all_baseline_sums_path):        
-            hb.zonal_statistics(                
+        if not hb.path_exists(protected_areas_all_baseline_sums_path):
+            hb.zonal_statistics(
                 protected_areas_all_baseline_15min_path,
                 zone_ids_raster_path=ee_r50_aez18_ids_15min_path,
                 stats_to_retrieve='sums',
                 csv_output_path=protected_areas_all_baseline_sums_path,
             )
-            
+
             # HACK to drop the extra
-            df = pd.read_csv(protected_areas_all_baseline_sums_path)            
+            df = pd.read_csv(protected_areas_all_baseline_sums_path)
             df = df[['id'] + [i for i in df.columns if 'sums' in str(i) or 'counts' in str(i) or 'enumerat' in str(i)]]
             df.to_csv(protected_areas_all_baseline_sums_path)
-            
-                        
+
+
         # Calculate zonal sums of new ha to protect
         ha_to_protect_sums_path = os.path.join(p.cur_dir, 'ha_to_protect_sums.csv')
         if not hb.path_exists(ha_to_protect_sums_path):
-            hb.zonal_statistics(                
+            hb.zonal_statistics(
                 ha_to_protect_15min_path,
                 zone_ids_raster_path=ee_r50_aez18_ids_15min_path,
                 stats_to_retrieve='sums',
                 csv_output_path=ha_to_protect_sums_path,
             )
-            
-            
+
+
             # HACK to drop the extra
-            df = pd.read_csv(ha_to_protect_sums_path)            
+            df = pd.read_csv(ha_to_protect_sums_path)
             df = df[['id'] + [i for i in df.columns if 'sums' in str(i) or 'counts' in str(i) or 'enumerat' in str(i)]]
             df.to_csv(ha_to_protect_sums_path)
-            
-            
+
+
         # Merge Zonal sums  and export as csv
         if not hb.path_exists(p.protection_by_aezreg_to_meet_30by30_path):
             df1 = pd.read_csv(protected_areas_all_baseline_sums_path)
             df2 = pd.read_csv(ha_to_protect_sums_path)
             combined_df = hb.df_merge(df1, df2, on='id', how='outer', verbose=False)
             combined_df.fillna(0, inplace=True)
-            
+
             combined_df['sum'] = combined_df['ha_to_protect_15min_sums'] + combined_df['protected_areas_all_baseline_15min_sums']
-            
+
             rename_dict = {}
             rename_dict['ha_to_protect_15min_sums'] = 'ha_to_protect'
             rename_dict['protected_areas_all_baseline_15min_sums'] = 'ha_already_protected'
@@ -2829,26 +2834,26 @@ def protection_by_aezreg_to_meet_30by30(p):
             combined_df.rename(columns=rename_dict, inplace=True)
             if 'id_pre' in combined_df.columns:
                 combined_df = combined_df[['id_pre', 'ha_to_protect', 'ha_already_protected', 'sum']]
-                combined_df.rename(columns={'id_pre': 'id'}, inplace=True)            
+                combined_df.rename(columns={'id_pre': 'id'}, inplace=True)
             else:
                 combined_df = combined_df[['id', 'ha_to_protect', 'ha_already_protected', 'sum']]
-            
-            
+
+
             combined_df.to_csv(p.protection_by_aezreg_to_meet_30by30_path, index=False)
-            
+
 
 
 
 def ag_value(p):
-    
+
     # Resamples ag value from 5min to 10sec.
-    
-    # Key outpu: High res ag value    
-    p.ag_value_10sec_path = p.get_path('crops', 'earthstat', 'ag_value_10sec.tif')  
+
+    # Key outpu: High res ag value
+    p.ag_value_10sec_path = p.get_path('crops', 'earthstat', 'ag_value_10sec.tif')
     if p.run_this:
         ag_value = p.get_path("crops", "ag_value_2000.tif")
         # resample to 10sec
-        
+
         if not hb.path_exists(p.ag_value_10sec_path):
             hb.resample_to_match_pyramid(ag_value,
                     p.aoi_ha_per_cell_fine_path,
@@ -2862,59 +2867,59 @@ def coarse_simplified_projected_ha_difference_from_previous_year(p):
     # Create a coarse resolution change map from existing coarse map and shift vector
 
     ee_r50_aez18_ids_15min_path = os.path.join(p.protection_by_aezreg_to_meet_30by30_dir, 'ee_r50_aez18_ids_15min.tif')
-    
+
     # NOTE: SEALS Requires that if there is a regional_change, it is in a dir (linked to a task) named regional_change_dir
     p.regional_change_dir = p.cur_dir
-    
+
     if p.run_this:
-        
+
         # Calculate number of cells in each AEZ-Reg
         n_cells_per_zone_path = os.path.join(p.cur_dir, 'n_cells_per_zone.csv')
         if not hb.path_exists(n_cells_per_zone_path):
             reclassify_rules = hb.enumerate_raster_path(ee_r50_aez18_ids_15min_path)
             final_dict = {'id': 'n_cells_per_zone'}
             final_dict.update(reclassify_rules)
-            hb.python_object_to_csv(final_dict, n_cells_per_zone_path)  
-            
-        
+            hb.python_object_to_csv(final_dict, n_cells_per_zone_path)
+
+
 
         # Iterate through all the scenarios
         for index, row in p.scenarios_df.iterrows():
             seals_utils.assign_df_row_to_object_attributes(p, row)
 
             if p.scenario_type != 'baseline' and p.regional_projections_input_path:
-                
-                # Read protection_by_aezreg_to_meet_30by30_path (this was generated based on ECN protected areas)                                 
+
+                # Read protection_by_aezreg_to_meet_30by30_path (this was generated based on ECN protected areas)
                 protection_by_aezreg_to_meet_30by30 = pd.read_csv(p.protection_by_aezreg_to_meet_30by30_path)
-                
+
                 # Read fine_lu_classes_ha_csv_path from luh_seals_baseline_adjustment_dir
                 fine_lu_classes_ha_csv_path = os.path.join(p.luh_seals_baseline_adjustment_dir, p.lulc_src_label + '_' + p.lulc_simplification_label + '_' + str(p.key_base_year) + '_lu_classes_ha.csv')
                 fine_lu_classes_ha = pd.read_csv(fine_lu_classes_ha_csv_path)
                 n_cells_df = pd.read_csv(n_cells_per_zone_path)
-                     
-                # Merge the above           
+
+                # Merge the above
                 merged = pd.merge(fine_lu_classes_ha, protection_by_aezreg_to_meet_30by30, on='id', how='outer')
                 merged2 = pd.merge(merged, n_cells_df, on='id', how='outer')
                 merged2.fillna(0, inplace=True)
 
-                for year_c, year in enumerate(p.years):   
-                    
+                for year_c, year in enumerate(p.years):
+
                     # IUCN SPECIFIC STEP
                     # Calculate what the natural vegetation would have been based on the proportion of total aezreg area in that type of natural land
-                    merged2['grassland_prop'] =  merged2['grassland']  /  (merged2['grassland'] + merged2['forest'] + merged2['othernat'])             
-                    merged2['forest_prop'] =  merged2['forest']  /  (merged2['grassland'] + merged2['forest'] + merged2['othernat'])             
-                    merged2['othernat_prop'] =  merged2['othernat']  /  (merged2['grassland'] + merged2['forest'] + merged2['othernat'])             
-                    
-                            
-                    for class_c, class_label in enumerate(p.changing_class_labels):   
-                        
+                    merged2['grassland_prop'] =  merged2['grassland']  /  (merged2['grassland'] + merged2['forest'] + merged2['othernat'])
+                    merged2['forest_prop'] =  merged2['forest']  /  (merged2['grassland'] + merged2['forest'] + merged2['othernat'])
+                    merged2['othernat_prop'] =  merged2['othernat']  /  (merged2['grassland'] + merged2['forest'] + merged2['othernat'])
+
+
+                    for class_c, class_label in enumerate(p.changing_class_labels):
+
                         # Get the correct previous year
                         if year_c == 0:
                             previous_year = p.key_base_year
 
                             previous_coarse_ha_dir = os.path.join(p.coarse_simplified_ha_dir, 'baseline', p.model_label, str(previous_year))
                             previous_coarse_ha_path = os.path.join(previous_coarse_ha_dir, class_label + '_ha_baseline_' + p.model_label + '_' + str(p.key_base_year) + '.tif')
-                            
+
                             previous_coarse_ha_diff_dir = os.path.join(p.coarse_simplified_ha_difference_from_previous_year_dir, 'baseline', p.model_label, str(previous_year))
                             previous_coarse_ha_diff_path = os.path.join(previous_coarse_ha_diff_dir, class_label + '_ha_diff_' + p.model_label + '_' + str(p.key_base_year) + '.tif')
                         else:
@@ -2926,7 +2931,7 @@ def coarse_simplified_projected_ha_difference_from_previous_year(p):
                             previous_coarse_ha_diff_dir = os.path.join(p.cur_dir, p.exogenous_label, p.climate_label, p.model_label, p.counterfactual_label, str(previous_year))
                             previous_coarse_ha_diff_filename = class_label + '_ha_diff_' + p.exogenous_label + '_' + p.climate_label + '_' + p.model_label + '_' + p.counterfactual_label + '_' + str(previous_year) + '.tif'
                             previous_coarse_ha_diff_path = os.path.join(previous_coarse_ha_dir, previous_coarse_ha_filename)
-                        
+
                         current_coarse_ha_shift_filename = class_label + '_' + str(year) + '_' + str(previous_year) + '_ha_diff_' + p.exogenous_label + '_' + p.climate_label + '_' + p.model_label + '_' + p.counterfactual_label + '.tif'
                         current_coarse_ha_diff_dir = os.path.join(p.cur_dir, p.exogenous_label, p.climate_label, p.model_label, p.counterfactual_label, str(year))
                         current_coarse_ha_shift_path = os.path.join(current_coarse_ha_diff_dir, current_coarse_ha_shift_filename)
@@ -2935,18 +2940,18 @@ def coarse_simplified_projected_ha_difference_from_previous_year(p):
                         # but multiplies by the potential natural vegetation proportion (IUCN SPEIFIC)
                         if class_label + '_prop' in merged2.columns:
                             if not hb.path_exists(current_coarse_ha_shift_path):
-                                
+
                                 # Shift the input coarse projection via a reclassification
                                 zones = merged2['id'].values.astype(np.int32)
                                 values = merged2['ha_to_protect'] * merged2[class_label + '_prop'].astype(np.float32)
                                 n_cells = merged2['n_cells_per_zone'].values.astype(np.float32)
-                                
+
                                 # Build the reclassification rule
-                                # NOTE: The Values here is the total amoutn needed for the AEZ, so we allocate evenly by dividing among the number of 
+                                # NOTE: The Values here is the total amoutn needed for the AEZ, so we allocate evenly by dividing among the number of
                                 # cells within the AEZ. This could have been further targetted but we did not.
                                 reclassify_rules = {zones[i]: values[i] / n_cells[i] for i in range(len(zones))}
-                                
-                                # TODO Build TEST that ensures this doesn't have wonky pregen 
+
+                                # TODO Build TEST that ensures this doesn't have wonky pregen
 
                                 reclassify_rules_final = {}
                                 for i in range(-9999, 9999):
@@ -2956,15 +2961,15 @@ def coarse_simplified_projected_ha_difference_from_previous_year(p):
                                         reclassify_rules_final[i] = reclassify_rules[i].astype(np.float32)
 
                                 # LEARNING POINT, due to the f'ed logic in the classification algirithms, must have a lowest value in the dict.
-                                # reclassify_rules[np.int32(-9999)] = np.float32(0)  
+                                # reclassify_rules[np.int32(-9999)] = np.float32(0)
                                 hb.reclassify_raster_hb(ee_r50_aez18_ids_15min_path, reclassify_rules_final, current_coarse_ha_shift_path, 6, -9999)
-                                
+
                         # If the land is not natural, then make a new coarse projection raster that is all zeros
                         else:
-                            if not hb.path_exists(current_coarse_ha_shift_path):                            
+                            if not hb.path_exists(current_coarse_ha_shift_path):
                                 zones = merged2['id'].values.astype(np.int32)
                                 reclassify_rules = {zones[i]: np.float32(0) for i in range(len(zones))}
-                                
+
                                 reclassify_rules_final = {}
                                 for i in range(-9999, 9999):
                                     if i not in reclassify_rules:
@@ -2978,25 +2983,25 @@ def coarse_simplified_projected_ha_difference_from_previous_year(p):
 
                         current_coarse_ha_diff_filename = class_label + '_' + str(year) + '_' + str(previous_year) + '_ha_diff_' + p.exogenous_label + '_' + p.climate_label + '_' + p.model_label + '_' + p.counterfactual_label + '.tif'
                         current_coarse_ha_diff_dir = os.path.join(p.cur_dir, p.exogenous_label, p.climate_label, p.model_label, p.counterfactual_label, str(year))
-                        current_coarse_ha_diff_path = os.path.join(current_coarse_ha_diff_dir, current_coarse_ha_diff_filename)                            
-                            
+                        current_coarse_ha_diff_path = os.path.join(current_coarse_ha_diff_dir, current_coarse_ha_diff_filename)
+
                         shifted_path = os.path.join(p.cur_dir, 'shifted_' + class_label + '.tif')
                         if not hb.path_exists(current_coarse_ha_diff_path):
                             def do_the_shift(a, b):
-                                    return a + b                       
+                                    return a + b
                             current_input_list = [previous_coarse_ha_path, current_coarse_ha_diff_path]
                             hb.raster_calculator_flex(current_input_list, do_the_shift, current_coarse_ha_diff_path, datatype=6, ndv=-9999., gtiff_creation_options=None, add_overviews=False)
-                
+
                 # If both regional and coarse inputs are defined, combine them
-                if p.scenario_type != 'baseline' and hb.path_exists(p.get_path(p.coarse_projections_input_path)):         
-                    for year_c, year in enumerate(p.years): 
-                        
+                if p.scenario_type != 'baseline' and hb.path_exists(p.get_path(p.coarse_projections_input_path)):
+                    for year_c, year in enumerate(p.years):
+
                         if year_c == 0:
                             previous_year = p.key_base_year
 
                             # previous_coarse_ha_dir = os.path.join(p.coarse_simplified_ha_dir, 'baseline', p.model_label, str(previous_year))
                             # previous_coarse_ha_path = os.path.join(previous_coarse_ha_dir, class_label + '_ha_baseline_' + p.model_label + '_' + str(p.key_base_year) + '.tif')
-                            
+
                             # previous_coarse_ha_diff_dir = os.path.join(p.coarse_simplified_ha_difference_from_previous_year_dir, 'baseline', p.model_label, str(previous_year))
                             # previous_coarse_ha_diff_path = os.path.join(previous_coarse_ha_diff_dir, class_label + '_ha_diff_' + p.model_label + '_' + str(p.key_base_year) + '.tif')
                         else:
@@ -3008,28 +3013,28 @@ def coarse_simplified_projected_ha_difference_from_previous_year(p):
                             # previous_coarse_ha_diff_dir = os.path.join(p.cur_dir, p.exogenous_label, p.climate_label, p.model_label, p.counterfactual_label, str(previous_year))
                             # previous_coarse_ha_diff_filename = class_label + '_ha_diff_' + p.exogenous_label + '_' + p.climate_label + '_' + p.model_label + '_' + p.counterfactual_label + '_' + str(previous_year) + '.tif'
                             # previous_coarse_ha_diff_path = os.path.join(previous_coarse_ha_dir, previous_coarse_ha_filename)
-                        
-                        
-                        for class_c, class_label in enumerate(p.changing_class_labels):  
+
+
+                        for class_c, class_label in enumerate(p.changing_class_labels):
                             current_coarse_ha_diff_filename = class_label + '_' + str(year) + '_' + str(previous_year) + '_ha_diff_' + p.exogenous_label + '_' + p.climate_label + '_' + p.model_label + '_' + p.counterfactual_label + '.tif'
                             current_coarse_ha_diff_dir = os.path.join(p.cur_dir, p.exogenous_label, p.climate_label, p.model_label, p.counterfactual_label, str(year))
-                            current_coarse_ha_diff_path = os.path.join(current_coarse_ha_diff_dir, current_coarse_ha_diff_filename)            
+                            current_coarse_ha_diff_path = os.path.join(current_coarse_ha_diff_dir, current_coarse_ha_diff_filename)
                             current_coarse_input_path = os.path.join(p.coarse_simplified_ha_difference_from_previous_year_dir, p.exogenous_label, p.climate_label, p.model_label, p.counterfactual_label, str(year), current_coarse_ha_diff_filename)
                             # first rename the shifted
-                            displaced_path = hb.rsuri(current_coarse_ha_diff_path, 'pre_coarse')              
+                            displaced_path = hb.rsuri(current_coarse_ha_diff_path, 'pre_coarse')
                             hb.path_rename(current_coarse_ha_diff_path, displaced_path)
-                            
+
                             # add them
                             def do_the_shift(a, b):
-                                    return a + b                       
+                                    return a + b
                             current_input_list = [current_coarse_input_path, displaced_path]
-                            hb.raster_calculator_flex(current_input_list, do_the_shift, current_coarse_ha_diff_path, datatype=6, ndv=-9999., gtiff_creation_options=None, add_overviews=False)                                                    
+                            hb.raster_calculator_flex(current_input_list, do_the_shift, current_coarse_ha_diff_path, datatype=6, ndv=-9999., gtiff_creation_options=None, add_overviews=False)
 
 
 def stitched_lulc_esa_scenarios(p):
     # optional
     # Reclassify the stitched simplified to original classification.
-    
+
     def fill_where_not_changed(changed, baseline, esa):
         return np.where(changed == baseline, esa, changed)
 
@@ -3172,4 +3177,3 @@ def stitched_lulc_esa_scenarios(p):
                             hb.make_path_global_pyramid(p.lulc_projected_stitched_path)
                         # else:
                         #     hb.make_path_spatially_clean(p.lulc_projected_stitched_path)
-

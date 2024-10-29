@@ -1,13 +1,15 @@
+import os
+
+import hazelbean as hb
+import numpy as np
+import pandas as pd
 from matplotlib import colors as colors
 from matplotlib import pyplot as plt
-import numpy as np
-import hazelbean as hb
-import os
-import pandas as pd
+from seals_visualization_functions import *
 
 # import seals
-import seals_utils
-from seals_visualization_functions import *
+from . import seals_utils
+
 
 def visualization(p):
     # Make folder for all visualizations.
@@ -15,7 +17,7 @@ def visualization(p):
 
 def coarse_change_with_class_change_underneath(passed_p=None):
     if passed_p is None:
-        global p 
+        global p
     else:
         p = passed_p
 
@@ -43,7 +45,7 @@ def coarse_change_with_class_change_underneath(passed_p=None):
                             previous_year = p.key_base_year
                         else:
                             previous_year = p.years[year_c - 1]
-                        
+
                         if zones_to_plot == 'all':
                             target_zones = p.global_processing_blocks_list
                         elif zones_to_plot == 'four':
@@ -57,23 +59,23 @@ def coarse_change_with_class_change_underneath(passed_p=None):
                         for c, row in enumerate(target_zones):
                                 target_zones[c] = str(row[0] + '_' + row[1])
 
-                        for target_zone in target_zones:            
-                            ha_diff_from_previous_year_dir_to_plot = os.path.join(p.coarse_simplified_ha_difference_from_previous_year_dir, p.exogenous_label, p.climate_label, p.model_label, p.counterfactual_label, str(year)) 
-                            allocation_dir_to_plot = os.path.join(p.intermediate_dir, 'allocations', p.exogenous_label, p.climate_label, p.model_label, p.counterfactual_label, str(year), 'allocation_zones', target_zone, 'allocation') 
+                        for target_zone in target_zones:
+                            ha_diff_from_previous_year_dir_to_plot = os.path.join(p.coarse_simplified_ha_difference_from_previous_year_dir, p.exogenous_label, p.climate_label, p.model_label, p.counterfactual_label, str(year))
+                            allocation_dir_to_plot = os.path.join(p.intermediate_dir, 'allocations', p.exogenous_label, p.climate_label, p.model_label, p.counterfactual_label, str(year), 'allocation_zones', target_zone, 'allocation')
                             lulc_projected_path= os.path.join(allocation_dir_to_plot, 'lulc_' + p.lulc_src_label + '_'  + p.lulc_simplification_label + '_' + p.exogenous_label + '_' + p.climate_label + '_' + p.model_label + '_' + p.counterfactual_label + '_' + str(year) + '.tif')
                             lulc_projected_array = None
 
                             if previous_year == p.key_base_year:
                                 lulc_previous_year_path = os.path.join(allocation_dir_to_plot, 'lulc_' + p.lulc_src_label + '_' + p.lulc_simplification_label + '_baseline_' + p.model_label + '_' + str(p.year) + '.tif')
 
-                                lulc_previous_year_array = None     # For deffered loading                       
+                                lulc_previous_year_array = None     # For deffered loading
                             else:
                                 previous_allocation_dir_to_plot = allocation_dir_to_plot.replace('\\','/').replace('/' + str(year) + '/', '/' + str(previous_year) + '/')
                                 lulc_previous_year_path = os.path.join(previous_allocation_dir_to_plot, 'lulc_' + p.lulc_src_label + '_' + p.lulc_simplification_label + '_' + p.exogenous_label + '_' + p.climate_label + '_' + p.model_label + '_' + p.counterfactual_label + '_' + str(previous_year) + '.tif')
                                 lulc_previous_year_array = None
-                            
-                            for class_id, class_label in zip(p.lulc_correspondence_dict['dst_ids'], p.lulc_correspondence_dict['dst_labels']): 
-                                
+
+                            for class_id, class_label in zip(p.lulc_correspondence_dict['dst_ids'], p.lulc_correspondence_dict['dst_labels']):
+
                                 filename = class_label + '_' + str(year) + '_' + str(previous_year) + '_ha_diff_' + p.exogenous_label + '_' + p.climate_label + '_' + p.model_label + '_' + p.counterfactual_label + '.tif'
                                 scaled_proportion_to_allocate_path = os.path.join(ha_diff_from_previous_year_dir_to_plot, filename)
                                 output_path = os.path.join(p.cur_dir, str(year) + '_' + target_zone + '_' + class_label + '_projected_expansion_and_contraction.png')
@@ -87,16 +89,16 @@ def coarse_change_with_class_change_underneath(passed_p=None):
                                     if lulc_previous_year_array is None:
                                         lulc_previous_year_array = hb.as_array_resampled_to_size(lulc_previous_year_path, max_plotting_size)
                                     change_array = hb.as_array(scaled_proportion_to_allocate_path)
-                                    
+
                                     show_class_expansions_vs_change_underneath(lulc_previous_year_array, lulc_projected_array, class_id, change_array, output_path,
                                                                     title='Class ' + class_label + ' projected expansion and contraction on coarse change')
 
 
 def coarse_change_with_class_change(passed_p=None):
     # For each class, plot the coarse and fine data
-    
+
     if passed_p is None:
-        global p 
+        global p
     else:
         p = passed_p
 
@@ -124,7 +126,7 @@ def coarse_change_with_class_change(passed_p=None):
                             previous_year = p.key_base_year
                         else:
                             previous_year = p.years[year_c - 1]
-                        
+
                         if zones_to_plot == 'all':
                             target_zones = p.global_processing_blocks_list
                         elif zones_to_plot == 'four':
@@ -138,23 +140,23 @@ def coarse_change_with_class_change(passed_p=None):
                         for c, row in enumerate(target_zones):
                                 target_zones[c] = str(row[0] + '_' + row[1])
 
-                        for target_zone in target_zones:            
-                            ha_diff_from_previous_year_dir_to_plot = os.path.join(p.coarse_simplified_ha_difference_from_previous_year_dir, p.exogenous_label, p.climate_label, p.model_label, p.counterfactual_label, str(year)) 
-                            allocation_dir_to_plot = os.path.join(p.intermediate_dir, 'allocations', p.exogenous_label, p.climate_label, p.model_label, p.counterfactual_label, str(year), 'allocation_zones', target_zone, 'allocation') 
+                        for target_zone in target_zones:
+                            ha_diff_from_previous_year_dir_to_plot = os.path.join(p.coarse_simplified_ha_difference_from_previous_year_dir, p.exogenous_label, p.climate_label, p.model_label, p.counterfactual_label, str(year))
+                            allocation_dir_to_plot = os.path.join(p.intermediate_dir, 'allocations', p.exogenous_label, p.climate_label, p.model_label, p.counterfactual_label, str(year), 'allocation_zones', target_zone, 'allocation')
                             lulc_projected_path= os.path.join(allocation_dir_to_plot, 'lulc_' + p.lulc_src_label + '_' + p.lulc_simplification_label + '_' + p.exogenous_label + '_' + p.climate_label + '_' + p.model_label + '_' + p.counterfactual_label + '_' + str(year) + '.tif')
                             lulc_projected_array = None
 
                             if previous_year == p.key_base_year:
                                 lulc_previous_year_path = os.path.join(allocation_dir_to_plot, 'lulc_' + p.lulc_src_label + '_' + p.lulc_simplification_label + '_' + p.model_label + '_' + str(previous_year) + '.tif')
 
-                                lulc_previous_year_array = None     # For deffered loading                       
+                                lulc_previous_year_array = None     # For deffered loading
                             else:
                                 previous_allocation_dir_to_plot = allocation_dir_to_plot.replace('\\','/').replace('/' + str(year) + '/', '/' + str(previous_year) + '/')
                                 lulc_previous_year_path = os.path.join(previous_allocation_dir_to_plot, 'lulc_' + p.lulc_src_label + '_' + p.lulc_simplification_label + '_' + p.exogenous_label + '_' + p.climate_label + '_' + p.model_label + '_' + p.counterfactual_label + '_' + str(previous_year) + '.tif')
                                 lulc_previous_year_array = None
-                            
-                            for class_id, class_label in zip(p.lulc_correspondence_dict['dst_ids'], p.lulc_correspondence_dict['dst_labels']): 
-                                
+
+                            for class_id, class_label in zip(p.lulc_correspondence_dict['dst_ids'], p.lulc_correspondence_dict['dst_labels']):
+
                                 filename = class_label + '_' + str(year) + '_' + str(previous_year) + '_ha_diff_' + p.exogenous_label + '_' + p.climate_label + '_' + p.model_label + '_' + p.counterfactual_label + '.tif'
                                 scaled_proportion_to_allocate_path = os.path.join(allocation_dir_to_plot, filename)
                                 output_path = os.path.join(p.cur_dir, str(year) + '_' + target_zone + '_' + class_label + '_projected_expansion_and_contraction.png')
@@ -168,13 +170,13 @@ def coarse_change_with_class_change(passed_p=None):
                                     if lulc_previous_year_array is None:
                                         lulc_previous_year_array = hb.as_array_resampled_to_size(lulc_previous_year_path, max_plotting_size)
                                     change_array = hb.as_array(scaled_proportion_to_allocate_path)
-                                    
+
                                     show_class_expansions_vs_change(lulc_previous_year_array, lulc_projected_array, class_id, change_array, output_path,
                                                                     title='Class ' + class_label + ' projected expansion and contraction on coarse change')
 
 def target_zones_matrices_pngs(passed_p=None):
     if passed_p is None:
-        global p 
+        global p
     else:
         p = passed_p
 
@@ -184,7 +186,7 @@ def target_zones_matrices_pngs(passed_p=None):
     if p.run_this:
         if p.scenario_definitions_path is not None:
             p.scenarios_df = pd.read_csv(p.scenario_definitions_path)
-            
+
             for index, row in p.scenarios_df.iterrows():
                 seals_utils.assign_df_row_to_object_attributes(p, row)
                 seals_utils.set_derived_attributes(p)
@@ -199,7 +201,7 @@ def target_zones_matrices_pngs(passed_p=None):
 
                             fig, ax = plt.subplots()
                             fig.set_size_inches(10, 8)
-                            
+
                             # Get the CR_width_height of the zone(s) we want to plut
 
 
@@ -208,14 +210,14 @@ def target_zones_matrices_pngs(passed_p=None):
                                 target_zones = p.global_processing_blocks_list
                                 offsets = [p.coarse_blocks_list[0]]
                                 offsets = [[int(i) for i in j] for j in target_zones]
-                            
+
                             elif zones_to_plot == 'four':
                                 target_zones = [p.global_processing_blocks_list[0], p.global_processing_blocks_list[int(len(p.global_processing_blocks_list)/4)], p.global_processing_blocks_list[int(len(p.global_processing_blocks_list)/2)], p.global_processing_blocks_list[int(len(p.global_processing_blocks_list)*3/4)]]
                                 offsets = [p.coarse_blocks_list[0]]
                                 offsets = [[int(i) for i in j] for j in target_zones]
-                            
 
-                            
+
+
                             elif zones_to_plot == 'first':
                                 target_zones = [p.global_processing_blocks_list[0]]
                                 offsets = [p.coarse_blocks_list[0]]
@@ -223,9 +225,9 @@ def target_zones_matrices_pngs(passed_p=None):
                             else:
                                 raise ValueError('zones_to_plot must be one of first, all, or four')
 
-                            
+
                             # full_change_matrix_no_diagonal = hb.as_array(full_change_matrix_no_diagonal_path)
-                            
+
                             for offset in offsets:
                                 full_change_matrix_no_diagonal = hb.load_geotiff_chunk_by_cr_size(full_change_matrix_no_diagonal_path, offset)
 
@@ -238,8 +240,8 @@ def target_zones_matrices_pngs(passed_p=None):
 
                                     hb.create_directories(current_change_dir)
 
-                                    full_change_matrix_no_diagonal_png_path = os.path.join(current_change_dir, current_lulc_filename)                            
-                            
+                                    full_change_matrix_no_diagonal_png_path = os.path.join(current_change_dir, current_lulc_filename)
+
                             if np.sum(full_change_matrix_no_diagonal) > 0:
                                 # Plot the heatmap
                                 vmin = np.min(full_change_matrix_no_diagonal)
@@ -264,10 +266,10 @@ def target_zones_matrices_pngs(passed_p=None):
                                 for i in range(n_classes * (coarse_match_n_rows)):
                                     class_id = i % n_classes
                                     row_labels.append(str(class_id))
-                                    
+
                                 for i in range(n_classes * (coarse_match_n_cols)):
                                     class_id = i % n_classes
-                                    col_labels.append(str(class_id))                            
+                                    col_labels.append(str(class_id))
 
                                 trans = ax.get_xaxis_transform()  # x in data untis, y in axes fraction
 
@@ -341,14 +343,15 @@ def target_zones_matrices_pngs(passed_p=None):
 
                                 # plt.savefig(full_change_matrix_no_diagonal_png_path)
 
-                                
-                                from hazelbean.visualization import full_show_array
+
+                                from hazelbean.visualization import \
+                                    full_show_array
                                 full_show_array(full_change_matrix_no_diagonal, output_path=full_change_matrix_no_diagonal_auto_png_path, cbar_label='Number of changes from class R to class C per tile', title='Change matrix mosaic',
                                                 num_cbar_ticks=2, vmin=0, vmid=vmax / 10.0, vmax=vmax, color_scheme='ylgnbu')
 
 def full_change_matrices_pngs(passed_p=None):
     if passed_p is None:
-        global p 
+        global p
     else:
         p = passed_p
 
@@ -358,7 +361,7 @@ def full_change_matrices_pngs(passed_p=None):
     if p.run_this:
         if p.scenario_definitions_path is not None:
             p.scenarios_df = pd.read_csv(p.scenario_definitions_path)
-            
+
             for index, row in p.scenarios_df.iterrows():
                 seals_utils.assign_df_row_to_object_attributes(p, row)
                 seals_utils.set_derived_attributes(p)
@@ -373,7 +376,7 @@ def full_change_matrices_pngs(passed_p=None):
 
                             fig, ax = plt.subplots()
                             fig.set_size_inches(10, 8)
-                            
+
                             full_change_matrix_no_diagonal = hb.as_array(full_change_matrix_no_diagonal_path)
                             if np.sum(full_change_matrix_no_diagonal) > 0:
                                 # Plot the heatmap
@@ -401,10 +404,10 @@ def full_change_matrices_pngs(passed_p=None):
                                 # for i in range(n_classes * (coarse_match_n_rows)):
                                 #     class_id = i % n_classes
                                 #     # row_labels.append(str(class_id))
-                                    
+
                                 # for i in range(n_classes * (coarse_match_n_cols)):
                                 #     class_id = i % n_classes
-                                #     # col_labels.append(str(class_id))                            
+                                #     # col_labels.append(str(class_id))
 
                                 # trans = ax.get_xaxis_transform()  # x in data untis, y in axes fraction
 
@@ -443,7 +446,7 @@ def full_change_matrices_pngs(passed_p=None):
                                     spine.set_visible(False)
 
                                 ax.grid(which="minor", color="w", linestyle='-', linewidth=1)
-                                
+
 
                                 full_change_matrix_no_diagonal_png_path = os.path.join(p.cur_dir, str(year) + '_full_change_matrix_no_diagonal.png')
                                 # texts = annotate_heatmap(im, valfmt="{x:.1f} t")
@@ -495,8 +498,9 @@ def full_change_matrices_pngs(passed_p=None):
 
                                 # plt.savefig(full_change_matrix_no_diagonal_png_path)
 
-                                
-                                from hazelbean.visualization import full_show_array
+
+                                from hazelbean.visualization import \
+                                    full_show_array
                                 full_show_array(full_change_matrix_no_diagonal, output_path=full_change_matrix_no_diagonal_auto_png_path, cbar_label='Number of changes from class R to class C per tile', title='Change matrix mosaic',
                                                 num_cbar_ticks=2, vmin=0, vmid=vmax / 10.0, vmax=vmax, color_scheme='ylgnbu')
 
@@ -513,7 +517,7 @@ def plot_generation(p, generation_id):
         difference_metric = hb.as_array(difference_metric_path)
         change_array = hb.as_array(p.coarse_change_paths[i - 1])
 
-        annotation_text = """Class 
+        annotation_text = """Class
 similarity:
 
 """ + str(round(np.sum(difference_metric))) + """
@@ -635,11 +639,11 @@ def plot_final_run():
 
 def lulc_pngs(p):
     # Simple plot of the PNGs.
-    
+
     if p.run_this:
         if p.scenario_definitions_path is not None:
             p.scenarios_df = pd.read_csv(p.scenario_definitions_path)
-            
+
 
             for index, row in p.scenarios_df.iterrows():
                 seals_utils.assign_df_row_to_object_attributes(p, row)
@@ -647,7 +651,7 @@ def lulc_pngs(p):
 
                 # Build a dict for the lulc labels
                 labels_dict = dict(zip(p.all_class_indices, p.all_class_labels))
-               
+
                 # this acountcs for the fact that the way the correspondence is loaded is not necessarily in the numerical order
                 indices_to_labels_dict = dict(sorted(labels_dict.items()))
 
@@ -663,7 +667,7 @@ def lulc_pngs(p):
 
 
                     max_plotting_size = 10000000
-                    
+
                     current_lulc_path = os.path.join(p.stitched_lulc_simplified_scenarios_dir, current_lulc_filename)
                     current_output_path = os.path.join(p.cur_dir, current_lulc_filename.replace('.tif', '.png'))
                     if not hb.path_exists(current_output_path):
@@ -676,7 +680,7 @@ def lulc_pngs(p):
 
 def coarse_fine_with_report(passed_p=None):
     if passed_p is None:
-        global p 
+        global p
     else:
         p = passed_p
 
@@ -704,7 +708,7 @@ def coarse_fine_with_report(passed_p=None):
                             previous_year = p.key_base_year
                         else:
                             previous_year = p.years[year_c - 1]
-                        
+
                         if p.plotting_level >= 0:
                             zones_to_plot = 'all'
                         elif p.plotting_level >= 30:
@@ -728,34 +732,34 @@ def coarse_fine_with_report(passed_p=None):
                         for c, row in enumerate(target_zones):
                                 target_zones[c] = str(row[0] + '_' + row[1])
 
-                        for target_zone in target_zones:            
-                            allocation_dir_to_plot = os.path.join(p.intermediate_dir, 'allocations', p.exogenous_label, p.climate_label, p.model_label, p.counterfactual_label, str(year), 'allocation_zones', target_zone, 'allocation') 
+                        for target_zone in target_zones:
+                            allocation_dir_to_plot = os.path.join(p.intermediate_dir, 'allocations', p.exogenous_label, p.climate_label, p.model_label, p.counterfactual_label, str(year), 'allocation_zones', target_zone, 'allocation')
                             lulc_projected_path= os.path.join(allocation_dir_to_plot, 'lulc_' + p.lulc_src_label + '_'  + p.lulc_simplification_label + '_' + p.exogenous_label + '_' + p.climate_label + '_' + p.model_label + '_' + p.counterfactual_label + '_' + str(year) + '.tif')
                             lulc_projected_array = None
-                            ha_per_cell_coarse_path = os.path.join(allocation_dir_to_plot, 'block_ha_per_cell_coarse.tif')      
+                            ha_per_cell_coarse_path = os.path.join(allocation_dir_to_plot, 'block_ha_per_cell_coarse.tif')
                             ha_per_cell_fine_path = os.path.join(allocation_dir_to_plot, 'block_ha_per_cell_fine.tif')
-                            
-                            
+
+
                             # lulc_baseline_path = os.path.join(p.cur_dir, 'lulc_' + p.lulc_simplification_label + '_' + p.exogenous_label + '_' + p.model_label + '_' + str(p.year) + '.tif')
                             # lulc_baseline_path = os.path.join(p.cur_dir, 'lulc_' + p.lulc_simplification_label + '_baseline_' + p.model_label + '_' + str(p.year) + '.tif')
 
                             if previous_year == p.key_base_year:
                                 lulc_previous_year_path = os.path.join(allocation_dir_to_plot, 'lulc_' + p.lulc_src_label + '_'  + p.lulc_simplification_label + '_' + p.model_label + '_' + str(previous_year) + '.tif')
 
-                                lulc_previous_year_array = None     # For deffered loading                       
+                                lulc_previous_year_array = None     # For deffered loading
                             else:
                                 previous_allocation_dir_to_plot = allocation_dir_to_plot.replace('\\','/').replace('/' + str(year) + '/', '/' + str(previous_year) + '/')
                                 lulc_previous_year_path = os.path.join(previous_allocation_dir_to_plot, 'lulc_' + p.lulc_src_label + '_'  + p.lulc_simplification_label + '_' + p.exogenous_label + '_' + p.climate_label + '_' + p.model_label + '_' + p.counterfactual_label + '_' + str(previous_year) + '.tif')
                                 lulc_previous_year_array = None
-                            
+
                             if p.plotting_level >= 0:
                                 do_class_specific_plots = True
                             else:
                                 do_class_specific_plots = False
 
                             if do_class_specific_plots:
-                                for class_id, class_label in zip(p.changing_class_indices, p.changing_class_labels): 
-                                    
+                                for class_id, class_label in zip(p.changing_class_indices, p.changing_class_labels):
+
                                     filename = class_label + '_' + str(year) + '_' + str(previous_year) + '_ha_diff_' + p.exogenous_label + '_' + p.climate_label + '_' + p.model_label + '_' + p.counterfactual_label + '.tif'
                                     scaled_proportion_to_allocate_path = os.path.join(allocation_dir_to_plot, filename)
                                     output_path = os.path.join(p.cur_dir, p.exogenous_label, p.climate_label, p.model_label, p.counterfactual_label, str(year), str(target_zone), class_label + '_projected_expansion_and_contraction.png')
@@ -771,28 +775,28 @@ def coarse_fine_with_report(passed_p=None):
                                             lulc_previous_year_array = hb.as_array_resampled_to_size(lulc_previous_year_path, max_plotting_size)
                                         change_array = hb.as_array(scaled_proportion_to_allocate_path)
 
-                                        ha_per_cell_coarse_path = os.path.join(allocation_dir_to_plot, 'block_ha_per_cell_coarse.tif')      
+                                        ha_per_cell_coarse_path = os.path.join(allocation_dir_to_plot, 'block_ha_per_cell_coarse.tif')
                                         ha_per_cell_fine_path = os.path.join(allocation_dir_to_plot, 'block_ha_per_cell_fine.tif')
 
                                         ha_per_cell_coarse_array = hb.as_array(ha_per_cell_coarse_path)
                                         ha_per_cell_fine_array = hb.as_array(ha_per_cell_fine_path)
 
-                                        show_specific_class_expansions_vs_change_with_numeric_report_and_validation(lulc_previous_year_array, lulc_projected_array, class_id, class_label, change_array, ha_per_cell_coarse_array, 
+                                        show_specific_class_expansions_vs_change_with_numeric_report_and_validation(lulc_previous_year_array, lulc_projected_array, class_id, class_label, change_array, ha_per_cell_coarse_array,
                                                                                             ha_per_cell_fine_array, allocation_dir_to_plot, output_path,
                                                                                             title='Class ' + class_label + ' projected expansion and contraction on coarse change')
-            
+
                             if p.plotting_level >= 0:
                                 do_all_class_plots = True
                             else:
                                 do_all_class_plots = False
-                            
+
                             if do_all_class_plots:
                                 change_array_paths = []
-                                for class_id, class_label in zip(p.changing_class_indices, p.changing_class_labels): 
+                                for class_id, class_label in zip(p.changing_class_indices, p.changing_class_labels):
                                     filename = class_label + '_' + str(year) + '_' + str(previous_year) + '_ha_diff_' + p.exogenous_label + '_' + p.climate_label + '_' + p.model_label + '_' + p.counterfactual_label + '.tif'
                                     scaled_proportion_to_allocate_path = os.path.join(allocation_dir_to_plot, filename)
                                     change_array_paths.append(scaled_proportion_to_allocate_path)
-                                    
+
                                 if lulc_projected_array is None:
                                     lulc_projected_array = hb.as_array_resampled_to_size(lulc_projected_path, max_plotting_size)
 
@@ -800,17 +804,17 @@ def coarse_fine_with_report(passed_p=None):
                                 if lulc_previous_year_array is None:
                                     lulc_previous_year_array = hb.as_array_resampled_to_size(lulc_previous_year_path, max_plotting_size)
                                 change_array = hb.as_array(scaled_proportion_to_allocate_path)
-                                
+
                                 output_path = os.path.join(p.cur_dir, p.exogenous_label, p.climate_label, p.model_label, p.counterfactual_label, str(year), str(target_zone), 'all_classes_projected_expansion_and_contraction.png')
                                 if not hb.path_exists(output_path):
                                     hb.create_directories(output_path)
-                                    
+
                                     ha_per_cell_coarse_array = hb.as_array(ha_per_cell_coarse_path)
                                     ha_per_cell_fine_array = hb.as_array(ha_per_cell_fine_path)
-                                    
-                                    show_all_class_expansions_vs_change_with_numeric_report_and_validation(lulc_previous_year_array, lulc_projected_array, p.changing_class_indices, 
-                                                                                                    p.changing_class_labels, change_array_paths, ha_per_cell_coarse_array, 
-                                                                                                    ha_per_cell_fine_array, allocation_dir_to_plot, output_path, 
+
+                                    show_all_class_expansions_vs_change_with_numeric_report_and_validation(lulc_previous_year_array, lulc_projected_array, p.changing_class_indices,
+                                                                                                    p.changing_class_labels, change_array_paths, ha_per_cell_coarse_array,
+                                                                                                    ha_per_cell_fine_array, allocation_dir_to_plot, output_path,
                                                                                                     title='Projected expansion and contraction on coarse change')
 
 
@@ -839,7 +843,7 @@ def simpler_plot_generation(p):
 
         change_array = hb.as_array(scaled_proportion_to_allocate_paths[i - 1])
 
-        annotation_text = """Class 
+        annotation_text = """Class
 similarity:
 
 """ + str(round(np.sum(difference_metric))) + """
