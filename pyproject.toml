@@ -1,0 +1,22 @@
+[project]
+name = "sealsmodel"
+description = "Land-use change model and downscaler"
+requires-python = ">=3.6"
+license = {file = "LICENSE"}
+maintainers = [
+        {name = "Justin Andrew Johnson"}
+]
+keywords = ["geospatial", "raster", "shapefile"]
+
+# These attributes are pulled from setup.py instead of being defined here
+dynamic = ["version"]
+
+[projet.urls]
+repository = "https://github.com/jandrewjohnson/seals_dev"
+
+[build-system]
+requires = [
+        "setuptools>=61", "wheel", "cython>3.0.0",
+        'oldest-supported-numpy; python_version<"3.8"',
+        'numpy>2; python_version>="3.8"',
+]
