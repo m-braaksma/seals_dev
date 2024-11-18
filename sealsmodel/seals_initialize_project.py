@@ -5,13 +5,13 @@ import sys
 
 import hazelbean as hb
 import pandas as pd
-import seals_tasks
 from hazelbean import cloud_utils
 
 from . import config
 from . import seals_generate_base_data
 from . import seals_main
 from . import seals_process_coarse_timeseries
+from . import seals_tasks
 from . import seals_utils
 from . import seals_visualization_tasks
 from .seals_utils import download_google_cloud_blob

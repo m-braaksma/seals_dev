@@ -1,10 +1,11 @@
-
 import collections
 import copy
 import logging
+import math
 import multiprocessing
 import os
 import sys
+import time
 import warnings
 from collections import OrderedDict
 
@@ -33,9 +34,6 @@ parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(os.path.dirname(os.path.abspath(parent_dir)))
 
 
-import math
-import time
-
 import pandas as pd
 
 from . import seals_utils
@@ -52,8 +50,6 @@ L = hb.get_logger()
 
 env_name = sys.executable.split(os.sep)[-2]
 
-import seals_utils
-
 if env_name is not None:
     try:
         seals_utils.recompile_cython(env_name)
@@ -61,17 +57,17 @@ if env_name is not None:
         raise NameError('Failed to compile cython. Most likely this is because you have not set the p.conda_env_name above to the name of your a properly configured environment with Cython installed. The other reason it might fail is if you do not have a C compiler installed.  To fix this, search for ')
 
 try:
-    from seals_cython_functions import calibrate as calibrate
+    from sealsmodel.seals_cython_functions import calibrate as calibrate
 except:
     raise NameError('Failed to import a cython-enabled library. Most likely this is because you have not set the p.conda_env_name above to the name of your a properly configured environment with Cython installed. The other reason it might fail is if you do not have a C compiler installed.  To fix this, search for ')
 
 try:
-    import seals_cython_functions as seals_cython_functions
+    from . import seals_cython_functions as seals_cython_functions
 except:
     raise NameError('Failed to import a cython-enabled library. Most likely this is because you have not set the p.conda_env_name above to the name of your a properly configured environment with Cython installed. The other reason it might fail is if you do not have a C compiler installed.  To fix this, search for ')
 
 try:
-    from seals_cython_functions import calibrate_from_change_matrix
+    from sealsmodel.seals_cython_functions import calibrate_from_change_matrix
 except:
     raise NameError('Failed to import a cython-enabled library. Most likely this is because you have not set the p.conda_env_name above to the name of your a properly configured environment with Cython installed. The other reason it might fail is if you do not have a C compiler installed.  To fix this, search for ')
 
@@ -79,6 +75,7 @@ except:
 def initialize_tasks(p):
     # how do tasks? Do this vs.
     5
+
 
 def full_change_matrices(passed_p=None):
     if passed_p is None:
