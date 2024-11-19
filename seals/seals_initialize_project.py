@@ -118,7 +118,12 @@ def initialize_scenario_definitions(p):
     p.calibration_parameters_override_dict = {}
     # p.calibration_parameters_override_dict['rcp45_ssp2'][2030]['BAU'] = os.path.join(p.input_dir, 'calibration_overrides', 'prevent_cropland_expansion_into_forest.xlsx')
 
+    # SEALS is based on an extremely comprehensive region classification system defined in the following geopackage.
+    global_regions_vector_ref_path = os.path.join('cartographic', 'ee', 'ee_r264_correspondence.gpkg')
     
+    if not hb.path_exists(p.regions_vector_path):
+        # p.regions_vector_path = p.get_path(global_regions_vector_ref_path)
+        p.global_regions_vector_path = p.get_path(global_regions_vector_ref_path)    
     
     # Some variables need further processing into attributes, like parsing a correspondence csv into a dict.
     seals_utils.set_derived_attributes(p)

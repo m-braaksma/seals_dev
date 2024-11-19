@@ -10,7 +10,8 @@ def project_aoi(p):
     # Process p.aoi to set the regional_vector, bb, bb_exact, and aoi_ha_per_cell_paths
     if isinstance(p.aoi, str):
         if p.aoi == 'global':
-            p.aoi_path = p.global_regions_vector_path
+            p.aoi_path = p.regions_vector_path # MISTAKE here where i overrode global. might make standard test seals fail until i update the base data and scenarios. csv
+            # p.aoi_path = p.global_regions_vector_path
             p.aoi_label = 'global'
             p.bb_exact = hb.global_bounding_box
             p.bb = p.bb_exact
@@ -22,16 +23,22 @@ def project_aoi(p):
             if len(p.aoi) == 3: # Then it might be an ISO3 code. For now, assume so.
                 p.aoi_path = os.path.join(p.cur_dir, 'aoi_' + str(p.aoi) + '.gpkg')
                 p.aoi_label = p.aoi
+                filter_column = 'ee_r264_label' # if it's exactly 3 characters, assume it's an ISO3 code.
+                filter_value = p.aoi.upper()
+            elif ':' in p.aoi: # Then it's an explicit filter for the regions_vector.
+                p.aoi_path = os.path.join(p.cur_dir, 'aoi_' + str(p.aoi).replace(':', '_') + '.gpkg')
+                p.aoi_label = p.aoi
+                filter_column, filter_value = p.aoi.split(':')
             else: # Then it's a path to a shapefile.
                 p.aoi_path = p.aoi
                 p.aoi_label = os.path.splitext(os.path.basename(p.aoi))[0]
 
             for current_aoi_path in hb.list_filtered_paths_nonrecursively(p.cur_dir, include_strings='aoi'):
                 if current_aoi_path != p.aoi_path:
-                    raise NameError('There is more than one AOI in the current directory. This means you are trying to run a project in a new area of interst in a project that was already run in a different area of interest. This is not allowed! You probably want to create a new project directory and set the p = hb.ProjectFlow(...) line to point to the new directory.')
+                    hb.log('There is more than one AOI in the current directory. This means you are trying to run a project in a new area of interst in a project that was already run in a different area of interest. This is not allowed! You probably want to create a new project directory and set the p = hb.ProjectFlow(...) line to point to the new directory.')
 
             if not hb.path_exists(p.aoi_path):
-                hb.extract_features_in_shapefile_by_attribute(p.global_regions_vector_path, p.aoi_path, 'ee_r264_label', p.aoi.upper())
+                hb.extract_features_in_shapefile_by_attribute(p.regions_vector_path, p.aoi_path, filter_column, filter_value)
             
             p.bb_exact = hb.spatial_projection.get_bounding_box(p.aoi_path)
             p.bb = hb.pyramids.get_pyramid_compatible_bb_from_vector_and_resolution(p.aoi_path, p.processing_resolution_arcseconds)

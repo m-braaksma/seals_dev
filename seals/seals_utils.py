@@ -1424,6 +1424,8 @@ def convert_regional_change_to_coarse(regional_change_vector_path, regional_chan
     # - distribution_algorithm is a string that indicates how to distribute the change across the cells. default is "proportional".
     # - Coarse_change_raster_path is an optional path that, if provided, will be combined with the regional change to produce a combined change raster.
     
+    HARDCODE_LABEL_ID = 'ee_r50_aez18_id'
+    HARDCODE_LABEL_NAME = 'ee_r50_aez18_label'
     
     # Read protection_by_aezreg_to_meet_30by30_path (this was generated based on ECN protected areas)                                 
     regional_change_vector = gpd.read_file(regional_change_vector_path)
@@ -1432,10 +1434,13 @@ def convert_regional_change_to_coarse(regional_change_vector_path, regional_chan
     regional_change_classes = pd.read_csv(regional_change_classes_path)
 
     # Make region_label uppercase
-    regional_change_classes['region_label'] = regional_change_classes['region_label'].str.upper() 
+    regional_change_classes['region_label'] = regional_change_classes['region_label'].astype(str).str.upper() 
     
     # Merge regional_change_vector with regional_change_classes
-    merged = pd.merge(regional_change_vector, regional_change_classes, left_on='ee_r264_label', right_on='region_label', how='inner')
+    
+    hb.print_iterable(regional_change_vector.columns)
+    hb.print_iterable(regional_change_classes.columns)
+    merged = pd.merge(regional_change_vector, regional_change_classes, left_on=HARDCODE_LABEL_ID, right_on='region_label', how='inner')
     
     if region_ids_raster_path is None:
         region_ids_raster_path = os.path.join(output_dir, 'region_ids.tif')
@@ -1445,7 +1450,7 @@ def convert_regional_change_to_coarse(regional_change_vector_path, regional_chan
         
         # TODOO NOTE that here we are not using all_touched. This is a fundamental problem with coarse reclassification. Lots of the polygon will be missed. Ideally, you use all_touched=False for 
         # country-country borders but all_touched=True for country-coastline boarders. Or join with EEZs?
-        hb.rasterize_to_match(regional_change_vector_path, coarse_ha_per_cell_path, region_ids_raster_path, burn_column_name='ee_r264_id', burn_values=None, datatype=13, ndv=0, all_touched=False)
+        hb.rasterize_to_match(regional_change_vector_path, coarse_ha_per_cell_path, region_ids_raster_path, burn_column_name=HARDCODE_LABEL_ID, burn_values=None, datatype=13, ndv=0, all_touched=False)
 
     # Get the number of cells per zone. We need to know how big the zone is in terms of coarse cells so we can calculate how much of the total change happens in each coarse gridcell    
     # TODOOO: Think about how I should deal with giving the whole regional_change_vector or if I should have it subset out the line it needs, cause this is a utility function.
@@ -1465,8 +1470,8 @@ def convert_regional_change_to_coarse(regional_change_vector_path, regional_chan
             hb.log('Processing ' + column + ' for ' + scenario_label + ',  writing to ' + output_path)
         
             for i, change in merged[column].items():
-                zone_id = merged['ee_r264_id'][i]
-                n_cells = n_cells_per_zone[zone_id]
+                zone_id = merged[HARDCODE_LABEL_ID][i]
+                n_cells = n_cells_per_zone[int(zone_id)] # BAD HACK, should be generalized to know ahead of time if it's an int or string
                 
                 if n_cells > 0  and change != 0:
                     result = change / n_cells
