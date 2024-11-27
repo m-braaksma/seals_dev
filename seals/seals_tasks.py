@@ -40,8 +40,10 @@ def project_aoi(p):
             if not hb.path_exists(p.aoi_path):
                 hb.extract_features_in_shapefile_by_attribute(p.regions_vector_path, p.aoi_path, filter_column, filter_value)
             
-            p.bb_exact = hb.spatial_projection.get_bounding_box(p.aoi_path)
-            p.bb = hb.pyramids.get_pyramid_compatible_bb_from_vector_and_resolution(p.aoi_path, p.processing_resolution_arcseconds)
+            from hazelbean import spatial_projection
+            from hazelbean import pyramids
+            p.bb_exact = spatial_projection.get_bounding_box(p.aoi_path)
+            p.bb = pyramids.get_pyramid_compatible_bb_from_vector_and_resolution(p.aoi_path, p.processing_resolution_arcseconds)
             
             
             # Create a PROJECT-SPECIFIC version of these clipped ones.

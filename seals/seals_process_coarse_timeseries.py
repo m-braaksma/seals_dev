@@ -14,8 +14,8 @@ from hazelbean import utils
 from hazelbean import pyramids
 from osgeo import gdal
 import netCDF4 as nc
-
-import seals_utils
+import seals
+from seals import seals_utils
 
 def regional_change(p):
     if p.run_this:
@@ -44,9 +44,20 @@ def regional_change(p):
                         output_dir = os.path.join(p.cur_dir, p.exogenous_label, p.climate_label, p.model_label, p.counterfactual_label, str(year)) 
                         scenario_label = p.scenario_label    
                         output_filename_end = '_' + str(year) + '_' + str(previous_year) + '_ha_diff_' + p.exogenous_label + '_' + p.climate_label + '_' + p.model_label + '_' + p.counterfactual_label + '.tif'
-                        
+                        regions_column_label = p.regions_column_label
                         # TODOO I should have iterated on class label here, then called the util file only on that one
-                        seals_utils.convert_regional_change_to_coarse(regional_change_vector_path, regional_change_classes_path, coarse_ha_per_cell_path, scenario_label, output_dir, output_filename_end, columns_to_process, region_ids_raster_path=region_ids_raster_path, distribution_algorithm='proportional', coarse_change_raster_path=None)
+                        seals_utils.convert_regional_change_to_coarse(regional_change_vector_path, 
+                                                                      regional_change_classes_path, 
+                                                                      coarse_ha_per_cell_path, 
+                                                                      scenario_label, 
+                                                                      output_dir, 
+                                                                      output_filename_end, 
+                                                                      columns_to_process, 
+                                                                      regions_column_label, 
+                                                                      p.years,
+                                                                      region_ids_raster_path=region_ids_raster_path, 
+                                                                      distribution_algorithm='proportional', 
+                                                                      coarse_change_raster_path=None)
                                     
                 
                         
@@ -750,7 +761,7 @@ def coarse_simplified_ha_difference_from_previous_year(p):
                     # base_year_path = os.path.join(base_year_dir, str(dst_class_label) + '_prop_' + baseline_exogenous_label + '_' + baseline_reference_model + '_' + str(base_year) + '.tif')
                     # # base_year_path = os.path.join(base_year_dir, p.lulc_simplification_label + '_' + v + '.tif')
 
-                    for year in p.years:
+                    for year_c, year in enumerate(p.years):
 
 
                         if current_starting_year is None:
@@ -766,12 +777,24 @@ def coarse_simplified_ha_difference_from_previous_year(p):
                             # current_starting_year_dir = os.path.join(p.coarse_simplified_proportion_dir, baseline_exogenous_label, baseline_reference_model, str(current_starting_year))
                             current_starting_year_path = os.path.join(current_starting_year_dir, str(dst_class_label) + '_prop_' + p.exogenous_label + '_' + p.climate_label + '_' + p.model_label + '_' + p.counterfactual_label + '_' + str(current_starting_year) + '.tif')
                             # current_starting_year_path = os.path.join(current_starting_year_dir, str(dst_class_label) + '_prop_' + baseline_exogenous_label + '_' + baseline_reference_model + '_' + str(current_starting_year) + '.tif')
-                            
+                        
+                        # In the event that the year IS the base_year, this means you just need the difference, but it might be scaled to zero. 
+                        changed = 0
+                        if year == p.key_base_year:
+                            year += 1
+                            changed = 1
+                                
                         current_ending_year_src_dir = os.path.join(p.coarse_simplified_proportion_dir, p.exogenous_label, p.climate_label, p.model_label, p.counterfactual_label, str(year))
                         current_ending_year_src_path = os.path.join(current_ending_year_src_dir, str(dst_class_label) + '_prop_' + p.exogenous_label + '_' + p.climate_label + '_' + p.model_label + '_' + p.counterfactual_label + '_' + str(year) + '.tif')
 
+                        # Set it back so it writes in the right place
+                        if changed:
+                            year -= 1
+
                         current_ending_year_dst_dir = os.path.join(p.cur_dir, p.exogenous_label, p.climate_label, p.model_label, p.counterfactual_label, str(year))
                         hb.create_directories(current_ending_year_dst_dir)
+                        
+
 
                         current_ending_year_dst_path = os.path.join(current_ending_year_dst_dir, dst_class_label + '_' + str(year) + '_' + str(current_starting_year) + '_ha_diff_' + p.exogenous_label + '_' + p.climate_label + '_' + p.model_label + '_' + p.counterfactual_label + '.tif')
 

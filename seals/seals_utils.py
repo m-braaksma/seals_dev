@@ -1414,7 +1414,7 @@ def load_blocks_list(p, input_dir):
 
 
 
-def convert_regional_change_to_coarse(regional_change_vector_path, regional_change_classes_path, coarse_ha_per_cell_path, scenario_label, output_dir, output_filename_end, columns_to_process, region_ids_raster_path=None, distribution_algorithm='proportional', coarse_change_raster_path=None):
+def convert_regional_change_to_coarse(regional_change_vector_path, regional_change_classes_path, coarse_ha_per_cell_path, scenario_label, output_dir, output_filename_end, columns_to_process, regions_column_label, years, region_ids_raster_path=None,  distribution_algorithm='proportional', coarse_change_raster_path=None):
     # Converts a regional vector change map to a coarse gridded representation. 
     # - Regiona_change_vector_path is a gpkg with the boundaries of the regions that are changing.
     # - regional_change_classes_path is a csv with columns for each changing landuse class (in columns to process) that reports net change in hectares per polygon.
@@ -1426,6 +1426,7 @@ def convert_regional_change_to_coarse(regional_change_vector_path, regional_chan
     
     HARDCODE_LABEL_ID = 'ee_r50_aez18_id'
     HARDCODE_LABEL_NAME = 'ee_r50_aez18_label'
+    
     
     # Read protection_by_aezreg_to_meet_30by30_path (this was generated based on ECN protected areas)                                 
     regional_change_vector = gpd.read_file(regional_change_vector_path)
@@ -1440,7 +1441,8 @@ def convert_regional_change_to_coarse(regional_change_vector_path, regional_chan
     
     hb.print_iterable(regional_change_vector.columns)
     hb.print_iterable(regional_change_classes.columns)
-    merged = pd.merge(regional_change_vector, regional_change_classes, left_on=HARDCODE_LABEL_ID, right_on='region_label', how='inner')
+    regions_column_id = regions_column_label.replace('label', 'id')
+    merged = pd.merge(regional_change_vector, regional_change_classes, left_on=regions_column_label, right_on='region_label', how='inner')
     
     if region_ids_raster_path is None:
         region_ids_raster_path = os.path.join(output_dir, 'region_ids.tif')
@@ -1450,7 +1452,7 @@ def convert_regional_change_to_coarse(regional_change_vector_path, regional_chan
         
         # TODOO NOTE that here we are not using all_touched. This is a fundamental problem with coarse reclassification. Lots of the polygon will be missed. Ideally, you use all_touched=False for 
         # country-country borders but all_touched=True for country-coastline boarders. Or join with EEZs?
-        hb.rasterize_to_match(regional_change_vector_path, coarse_ha_per_cell_path, region_ids_raster_path, burn_column_name=HARDCODE_LABEL_ID, burn_values=None, datatype=13, ndv=0, all_touched=False)
+        hb.rasterize_to_match(regional_change_vector_path, coarse_ha_per_cell_path, region_ids_raster_path, burn_column_name=regions_column_id, burn_values=None, datatype=13, ndv=0, all_touched=False)
 
     # Get the number of cells per zone. We need to know how big the zone is in terms of coarse cells so we can calculate how much of the total change happens in each coarse gridcell    
     # TODOOO: Think about how I should deal with giving the whole regional_change_vector or if I should have it subset out the line it needs, cause this is a utility function.
@@ -1461,32 +1463,39 @@ def convert_regional_change_to_coarse(regional_change_vector_path, regional_chan
     # scenario_row = merged[merged['scenario_label'] == scenario_label]
     scenario_row = merged
     
+    print(merged)
+    
     # Build the allocation dictionary for each zone_id: to_allocate, which will be reclassified onto the zone ids.
-    allocate_per_zone_dict = {}
-    for column in columns_to_process:
-        output_path = os.path.join(output_dir, column + output_filename_end)
-        
-        if not hb.path_exists(output_path):
-            hb.log('Processing ' + column + ' for ' + scenario_label + ',  writing to ' + output_path)
-        
-            for i, change in merged[column].items():
-                zone_id = merged[HARDCODE_LABEL_ID][i]
-                n_cells = n_cells_per_zone[int(zone_id)] # BAD HACK, should be generalized to know ahead of time if it's an int or string
-                
-                if n_cells > 0  and change != 0:
-                    result = change / n_cells
-                else:
-                    result = 0.0
-
-                if 'nan' in str(result).lower():
-                    allocate_per_zone_dict[zone_id] = 0.0
-                else: 
-                    allocate_per_zone_dict[zone_id] = result
+    for year_c, year in enumerate(years):
+        allocate_per_zone_dict = {}
+        for column in columns_to_process:
+            output_path = os.path.join(output_dir, column + output_filename_end)
+            
+            if not hb.path_exists(output_path):
+                hb.log('Processing ' + column + ' for ' + scenario_label + ',  writing to ' + output_path)
+                regions_column_id = regions_column_id.replace('label', 'id')
+                for i, change in merged.loc[merged['year']==year, column].items():
+                    zone_id = int(merged[regions_column_id][i])
                     
-            print(allocate_per_zone_dict)
-                
+                    if int(zone_id) in n_cells_per_zone:
+                        n_cells = n_cells_per_zone[int(zone_id)] # BAD HACK, should be generalized to know ahead of time if it's an int or string
+                    else:
+                        n_cells = 0
+                        
+                    if n_cells > 0  and change != 0:
+                        result = change / n_cells
+                    else:
+                        result = 0.0
 
-            hb.reclassify_raster_hb(region_ids_raster_path, allocate_per_zone_dict, output_path, output_data_type=7, array_threshold=10000, match_path=None, invoke_full_callback=False, verbose=False)
-                
+                    if 'nan' in str(result).lower():
+                        allocate_per_zone_dict[zone_id] = 0.0
+                    else: 
+                        allocate_per_zone_dict[zone_id] = result
+                        
+                print(allocate_per_zone_dict)
+                    
+
+                hb.reclassify_raster_hb(region_ids_raster_path, allocate_per_zone_dict, output_path, output_data_type=7, array_threshold=10000, match_path=None, invoke_full_callback=False, verbose=False)
+                    
 
 
