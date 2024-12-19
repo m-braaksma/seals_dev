@@ -1436,8 +1436,21 @@ def allocations(p):
                             got_path = p.get_path(p.regional_projections_input_path)
                             task_dir = os.path.join(p.intermediate_dir, p.regional_projections_input_path)                            
 
-                        
-                            if hb.path_exists(got_path): # If it's a path, it is required to be based on the regional_change_dir task
+
+                            # Tricky case here, because there was catears in the refpath, it never found it and thus assumed it was an input to be created
+                            # This means the path has the extra cur_dir derived paths. Hack here to find the refpath and merge it with intermediate
+                            replace_dict = {'<^year^>': str(p.years[0])}
+                            regional_change_classes_path1 = hb.replace_in_string_via_dict(got_path, replace_dict)
+                                
+                            if hb.path_exists(regional_change_classes_path1):
+                                regional_change_classes_path = regional_change_classes_path1
+                            else:
+                                split = regional_change_classes_path1.split(os.path.split(p.cur_dir)[1])[1].replace('\\', '/')[1:]
+                                regional_change_classes_path = os.path.join(p.intermediate_dir, split)                            
+                            # split = regional_change_classes_path1.split(os.path.split(p.cur_dir)[1])[1].replace('\\', '/')[1:]
+                            # regional_change_classes_path = os.path.join(p.intermediate_dir, split)                        
+
+                            if hb.path_exists(regional_change_classes_path): # If it's a path, it is required to be based on the regional_change_dir task
                                 projected_coarse_change_dir = os.path.join(p.regional_change_dir, p.exogenous_label, p.climate_label, p.model_label, p.counterfactual_label, str(year))
                             elif hb.path_exists(task_dir): # if it's a task that exists on the task tree, then that is the scenario root.
                                 projected_coarse_change_dir = os.path.join(task_dir, p.exogenous_label, p.climate_label, p.model_label, p.counterfactual_label, str(year))
@@ -2386,7 +2399,9 @@ def stitched_lulc_simplified_scenarios(p):
                                 #     hb.clip_raster_by_bb(p.lulc_simplified_paths[p.key_base_year], p.bb_of_tiles, p.local_output_base_map_path)
                     else:
                         hb.log('Skipping stitching ' + p.lulc_projected_stitched_path + ' because it already exists.')
-                        
+                    
+                    
+                    # START HERE: I have no idea why, but the areas in the NORTH outside of the aereg but inside the bb have change, but the areas IN the aezreg don't have change.
                     if p.clip_to_aoi and p.aoi != 'global' and hb.path_exists(p.aoi_path):
                         hb.timer('start clip')
                         clipped_path = hb.suri(p.lulc_projected_stitched_path, 'clipped')

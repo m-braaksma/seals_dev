@@ -90,6 +90,8 @@ def fine_processed_inputs(p):
 def lulc_clip(p):
     # Clip the fine LULC to the project AOI
     
+    ## TODOO It is harder to implement task-level skipping when there is a base_data based file existence check
+    
     if p.run_this:
 
         # In the event that aoi is not global, we will store aoi_lulc and global_lulc paths. In the global version
@@ -110,6 +112,7 @@ def lulc_clip(p):
                         p.base_data_lulc_src_paths[year] = os.path.join(base_data_lulc_src_dir, src_filename_start + str(year) + '.tif')
                         p.aoi_lulc_src_paths[year] = os.path.join(p.fine_processed_inputs_dir, 'lulc', p.lulc_src_label, src_filename_start + str(year) + '.tif')
                         p.lulc_src_paths[year] = p.aoi_lulc_src_paths[year] 
+                        
 
                         if not hb.path_exists(p.aoi_lulc_src_paths[year]):
                             hb.create_directories(p.aoi_lulc_src_paths[year])
