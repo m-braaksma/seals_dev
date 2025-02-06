@@ -71,137 +71,165 @@ def regional_change(p):
                         # Important note here, if you just set NO coarse projections input path, it will be explicitly proportional. 
                         # However, you might want to still keep the spatial pattern of the coarse gridded map but have the coarse map not modify the TOTAL 
                         # amount away from what the regional projection says.
-                        if hb.path_exists(p.coarse_projections_input_path): # Then it is a regional shift with a coarse spatial projection
-                            for column in columns_to_process:
-                                 
-                                current_luc_coarse_projections_input_dir = os.path.join(p.coarse_simplified_ha_difference_from_previous_year_dir, p.exogenous_label, p.climate_label, p.model_label, p.counterfactual_label, str(year)) 
-                                current_luc_filename = column + '_' + str(year) + '_' + str(previous_year) + '_ha_diff_' + p.exogenous_label + '_' + p.climate_label + '_' + p.model_label + '_' + p.counterfactual_label + '.tif'
-                                current_luc_coarse_projections_path = os.path.join(current_luc_coarse_projections_input_dir, current_luc_filename)
-                                hb.log("loading the coarse gridded projection raster from " + current_luc_coarse_projections_path)
-                                current_luc_coarse_projections = hb.as_array(current_luc_coarse_projections_path)
+                         # Then it is a regional shift with a coarse spatial projection
+                        for column in columns_to_process:
+                            
+                            if 'cropland' in column:
+                                pass 
                                 
-                                regional_coarsified_filename = column + '_' + str(year) + '_' + str(previous_year) + '_ha_diff_' + p.exogenous_label + '_' + p.climate_label + '_' + p.model_label + '_' + p.counterfactual_label + '_regional_coarsified.tif'
-                                regional_coarsified_path = os.path.join(output_dir, regional_coarsified_filename)
-                                
-                                output_filename_template = column + '_' + str(year) + '_' + str(previous_year) + '_ha_diff_' + p.exogenous_label + '_' + p.climate_label + '_' + p.model_label + '_' + p.counterfactual_label + '.tif'
-                                output_path_template = os.path.join(output_dir, output_filename_template)
-                                
-                                # Now add the current_luc_coarse_projections to the regional_coarsified_raster
-                                regional_coarsified_raster = hb.as_array(regional_coarsified_path)
-                                
-                                # covariate_additive
-                                covariate_additive = current_luc_coarse_projections + regional_coarsified_raster
-                                hb.save_array_as_geotiff(covariate_additive, hb.suri(output_path_template, 'covariate_additive'), current_luc_coarse_projections_path)
-                                
+                            current_luc_coarse_projections_input_dir = os.path.join(p.coarse_simplified_ha_difference_from_previous_year_dir, p.exogenous_label, p.climate_label, p.model_label, p.counterfactual_label, str(year)) 
+                            current_luc_filename = column + '_' + str(year) + '_' + str(previous_year) + '_ha_diff_' + p.exogenous_label + '_' + p.climate_label + '_' + p.model_label + '_' + p.counterfactual_label + '.tif'
+                            current_luc_coarse_projections_path = os.path.join(current_luc_coarse_projections_input_dir, current_luc_filename)
+                            hb.log("loading the coarse gridded projection raster from " + current_luc_coarse_projections_path)
+                            current_luc_coarse_projections = hb.as_array(current_luc_coarse_projections_path)
+                            
+                            regional_coarsified_filename = column + '_' + str(year) + '_' + str(previous_year) + '_ha_diff_' + p.exogenous_label + '_' + p.climate_label + '_' + p.model_label + '_' + p.counterfactual_label + '_regional_coarsified.tif'
+                            regional_coarsified_path = os.path.join(output_dir, regional_coarsified_filename)
+                            
+                            output_filename_template = column + '_' + str(year) + '_' + str(previous_year) + '_ha_diff_' + p.exogenous_label + '_' + p.climate_label + '_' + p.model_label + '_' + p.counterfactual_label + '.tif'
+                            output_path_template = os.path.join(output_dir, output_filename_template)
+                            
+                            # Now add the current_luc_coarse_projections to the regional_coarsified_raster
+                            regional_coarsified_raster = hb.as_array(regional_coarsified_path)
+                            
+                            # covariate_additive
+                            covariate_additive = (current_luc_coarse_projections + regional_coarsified_raster) * 1000.0
+                            hb.save_array_as_geotiff(covariate_additive, hb.suri(output_path_template, 'covariate_additive'), current_luc_coarse_projections_path)
+                           
 
-                                ####### covariate_regavg_shift
-                                current_luc_coarse_projections_stats_df = hb.zonal_statistics(
-                                    current_luc_coarse_projections_path,
-                                    zones_vector_path=None,
-                                    id_column_label=None,
-                                    zone_ids_raster_path=region_ids_raster_path,
-                                    stats_to_retrieve='sums_counts',
-                                    enumeration_classes=None,
-                                    enumeration_labels=None,
-                                    multiply_raster_path=None,
-                                    output_column_prefix=None, # If None uses the fileroot, use '' to be blank.
-                                    vector_columns_to_keep='all',
-                                    csv_output_path=None,
-                                    vector_output_path=None,
-                                    zones_ndv = None,
-                                    zones_raster_data_type=None,
-                                    unique_zone_ids=None, # CAUTION on changing this one. Cython code is optimized by assuming a continuous set of integers of the right bit size that covers all value possibilities and zero and the NDV.
-                                    id_min = None,
-                                    id_max = None,
-                                    assert_projections_same=False,
-                                    values_ndv=-9999,
-                                    max_enumerate_value=20000,
-                                    use_pygeoprocessing_version=False,
-                                    verbose=False,                                    
-                                )
-                                
-                                current_label = hb.file_root(current_luc_coarse_projections_path)
-                                
-                                write_dict = {}
-                                
-                                for i, row in current_luc_coarse_projections_stats_df.iterrows():
-                                    region_id = row['id']
-                                    region_sum = row[f'{current_label}_sums']
-                                    region_count = row[f'{current_label}_counts']
-                                    region_avg = region_sum / region_count
-                                    write_dict[int(region_id)] = region_avg
+                            ####### covariate_regavg_shift
+                            current_luc_coarse_projections_stats_df = hb.zonal_statistics(
+                                current_luc_coarse_projections_path,
+                                zones_vector_path=None,
+                                id_column_label=None,
+                                zone_ids_raster_path=region_ids_raster_path,
+                                stats_to_retrieve='sums_counts',
+                                enumeration_classes=None,
+                                enumeration_labels=None,
+                                multiply_raster_path=None,
+                                output_column_prefix=None, # If None uses the fileroot, use '' to be blank.
+                                vector_columns_to_keep='all',
+                                csv_output_path=None,
+                                vector_output_path=None,
+                                zones_ndv = None,
+                                zones_raster_data_type=None,
+                                unique_zone_ids=None, # CAUTION on changing this one. Cython code is optimized by assuming a continuous set of integers of the right bit size that covers all value possibilities and zero and the NDV.
+                                id_min = None,
+                                id_max = None,
+                                assert_projections_same=False,
+                                values_ndv=-9999,
+                                max_enumerate_value=20000,
+                                use_pygeoprocessing_version=False,
+                                verbose=False,                                    
+                            )
+                            
+                            current_label = hb.file_root(current_luc_coarse_projections_path)
+                            
+                            write_dict = {}
+                            
+                            for i, row in current_luc_coarse_projections_stats_df.iterrows():
+                                region_id = row['id']
+                                region_sum = row[f'{current_label}_sums']
+                                region_count = row[f'{current_label}_counts']
+                                region_avg = region_sum / region_count
+                                write_dict[int(region_id)] = region_avg
 
-                                if len(write_dict) > 0:
-                                    target_raster_path = hb.suri(output_path_template, 'covariate_regavg_shift')
-                                    hb.reclassify_raster(
-                                        (region_ids_raster_path, 1), write_dict, target_raster_path, 7,
-                                        -9999., values_required=False,
-                                        raster_driver_creation_tuple=hb.DEFAULT_GTIFF_CREATION_TUPLE_OPTIONS)
-                                
+                            if len(write_dict) > 0:
+                                target_raster_path = hb.suri(output_path_template, 'covariate_regavg_shift')
+                                hb.reclassify_raster(
+                                    (region_ids_raster_path, 1), write_dict, target_raster_path, 7,
+                                    -9999., values_required=False,
+                                    raster_driver_creation_tuple=hb.DEFAULT_GTIFF_CREATION_TUPLE_OPTIONS)
+                            
                                 covariate_sum_shift_path = hb.suri(output_path_template, 'covariate_sum_shift')
                                 input = ((regional_coarsified_path, 1), (current_luc_coarse_projections_path, 1), (target_raster_path, 1))
                                 def op(a, b, c):
                                     return (a - (c-b))
                                 hb.raster_calculator(input, op, covariate_sum_shift_path, 7, -9999.)
- 
-                                #### COVARIATE MULTIPLY SHIFT
-                                regions_column_id = regions_column_label.replace('_label', '_id')
+
+                            #### COVARIATE MULTIPLY SHIFT
+                            regions_column_id = regions_column_label.replace('_label', '_id')
+                            
+                            regional_change_classes = pd.read_csv(regional_change_classes_path)
+                            # regional_change_classes[regions_column_label] = regional_change_classes[regions_column_label].astype(str).str.upper()  
+                            # regional_change_classes['region_label'] = regional_change_classes[region_label].astype(str).str.upper()
                                 
-                                regional_change_classes = pd.read_csv(regional_change_classes_path)
-                                regional_change_classes[regions_column_label] = regional_change_classes[regions_column_label].astype(str).str.upper()  
-                                
-                                 
-                                # Read protection_by_aezreg_to_meet_30by30_path (this was generated based on ECN protected areas)                                 
-                                regional_change_vector = gpd.read_file(regional_change_vector_path)
+                            # Read protection_by_aezreg_to_meet_30by30_path (this was generated based on ECN protected areas)                                 
+                            regional_change_vector = gpd.read_file(regional_change_vector_path)
+                            
+                            # there are two different merge types, on label and on id. BOTH are required because in gtappy we are concatenating AEZ and reg_id
+                            if str(regions_column_label).endswith('_label'):
                                 regional_change_vector[regions_column_label] = regional_change_vector[regions_column_label].astype(str).str.upper()
-
-                                merged = pd.merge(regional_change_vector, regional_change_classes, left_on=regions_column_label, right_on=regions_column_label, how='inner')
+                                regional_change_vector['region_label'] = regional_change_vector[regions_column_label]
                                 
-                                                            
+                                regional_change_classes[regions_column_label] = regional_change_classes[regions_column_label].astype(str).str.upper()
+                                regional_change_classes['region_label'] = regional_change_classes[regions_column_label]
                                 
-                                
-                                region_write_dict = {}
-                                for i, row in merged.iterrows():
-                                    region_id = row[regions_column_id]
-                                    region_sum = row[column]
-                                    region_write_dict[int(region_id)] = region_sum
-
-
-
-                                if len(region_write_dict) > 0:
-                                    covariate_multiply_regional_change_sum_path = hb.suri(output_path_template, 'covariate_multiply_regional_change_sum')
-                                    hb.reclassify_raster(
-                                        (region_ids_raster_path, 1), region_write_dict, covariate_multiply_regional_change_sum_path, 7,
-                                        -9999., values_required=False,
-                                        raster_driver_creation_tuple=hb.DEFAULT_GTIFF_CREATION_TUPLE_OPTIONS)
-                                
-                                covariate_sum_shift_path = hb.suri(output_path_template, 'covariate_sum_shift')
-
-                                coarse_write_dict = {}
-                                for i, row in current_luc_coarse_projections_stats_df.iterrows():
-                                    region_id = row['id']
-                                    region_sum = row[f'{current_label}_sums']
-                                    coarse_write_dict[int(region_id)] = region_sum
-
-                                if len(coarse_write_dict) > 0:
-                                    covariate_multiply_regional_change_sum_path = hb.suri(output_path_template, 'covariate_multiply_regional_change_sum')
-                                    hb.reclassify_raster(
-                                        (region_ids_raster_path, 1), coarse_write_dict, covariate_multiply_regional_change_sum_path, 7,
-                                        -9999., values_required=False,
-                                        raster_driver_creation_tuple=hb.DEFAULT_GTIFF_CREATION_TUPLE_OPTIONS)
-
-                                covariate_multiply_shift_path = hb.suri(output_path_template, 'covariate_multiply_shift')
-                                input = ((current_luc_coarse_projections_path, 1), (covariate_multiply_regional_change_sum_path, 1), (covariate_multiply_regional_change_sum_path, 1))
-                                def op(a, b, c):
-                                    return (a * (b/c))
-                                hb.raster_calculator(input, op, covariate_multiply_shift_path, 7, -9999.)
-                                
-                                # This is the one i want to use so also save it as the templat3
-                                hb.path_copy(covariate_multiply_shift_path, output_path_template)
+                                merged = hb.df_merge_quick(regional_change_vector, regional_change_classes, left_on='region_label', right_on='region_label', how='inner')
                                 
                                 
-                        else:
-                            "no need to shift it then."
+                            elif str(regions_column_label).endswith('_id'):
+                                regional_change_vector[regions_column_label] = regional_change_vector[regions_column_label].astype(int)
+                                regional_change_vector['region_label'] = regional_change_vector[regions_column_label]
+                                
+                                regional_change_classes[regions_column_label] = regional_change_classes[regions_column_label].astype(int)
+                                regional_change_classes['region_label'] = regional_change_classes[regions_column_label]        
+                                
+                                merged = hb.df_merge_quick(regional_change_vector, regional_change_classes, left_on='region_label', right_on='region_label', how='inner')   
+                                
+                            else:
+                                raise NameError('Regions column label must end with _label or _id')                                
+                            
+                            
+                            # regional_change_vector['region_label'] = regional_change_vector[regions_column_label].astype(int)
+
+                            # merged = pd.merge(regional_change_vector, regional_change_classes, left_on='region_label', right_on='region_label', how='inner')
+                            
+                                                        
+                            
+                            
+                            region_write_dict = {}
+                            for i, row in merged.iterrows():
+                                region_id = row[regions_column_id]
+                                region_sum = row[column]
+                                region_write_dict[int(region_id)] = region_sum
+
+
+
+                            if len(region_write_dict) > 0:
+                                covariate_multiply_regional_change_sum_path = hb.suri(output_path_template, 'covariate_multiply_regional_change_sum_pre')
+                                hb.reclassify_raster(
+                                    (region_ids_raster_path, 1), region_write_dict, covariate_multiply_regional_change_sum_path, 7,
+                                    -9999., values_required=False,
+                                    raster_driver_creation_tuple=hb.DEFAULT_GTIFF_CREATION_TUPLE_OPTIONS)
+                            
+                            covariate_sum_shift_path = hb.suri(output_path_template, 'covariate_sum_shift')
+
+                            coarse_write_dict = {}
+                            for i, row in current_luc_coarse_projections_stats_df.iterrows():
+                                region_id = row['id']
+                                region_sum = row[f'{current_label}_sums']
+                                coarse_write_dict[int(region_id)] = region_sum
+
+                            if len(coarse_write_dict) > 0:
+                                covariate_multiply_regional_change_sum_path = hb.suri(output_path_template, 'covariate_multiply_regional_change_sum')
+                                hb.reclassify_raster(
+                                    (region_ids_raster_path, 1), coarse_write_dict, covariate_multiply_regional_change_sum_path, 7,
+                                    -9999., values_required=False,
+                                    raster_driver_creation_tuple=hb.DEFAULT_GTIFF_CREATION_TUPLE_OPTIONS)
+
+                            covariate_multiply_shift_path = hb.suri(output_path_template, 'covariate_multiply_shift')
+                            input = ((current_luc_coarse_projections_path, 1), (covariate_multiply_regional_change_sum_path, 1), (covariate_multiply_regional_change_sum_path, 1))
+                            def op(a, b, c):
+                                return (a * (b/c))
+                            hb.raster_calculator(input, op, covariate_multiply_shift_path, 7, -9999.)
+                            
+                            # This is the one i want to use so also save it as the template. Can choose from different algorithms above.
+                            alg_to_use_path = hb.suri(output_path_template, 'covariate_additive')
+                            hb.path_copy(alg_to_use_path, output_path_template)
+                                
+                                
+
                 else:
                     hb.log('No regional change listed, so not shifting regions.')    
 
@@ -904,7 +932,8 @@ def coarse_simplified_ha_difference_from_previous_year(p):
                         # In the event that the year IS the base_year, this means you just need the difference, but it might be scaled to zero. 
                         changed = 0
                         if year == p.key_base_year:
-                            year += 1
+                            year += 0
+                            # year += 1
                             changed = 1
                                 
                         current_ending_year_src_dir = os.path.join(p.coarse_simplified_proportion_dir, p.exogenous_label, p.climate_label, p.model_label, p.counterfactual_label, str(year))
@@ -912,7 +941,8 @@ def coarse_simplified_ha_difference_from_previous_year(p):
 
                         # Set it back so it writes in the right place
                         if changed:
-                            year -= 1
+                            year -= 0
+                            # year -= 1
 
                         current_ending_year_dst_dir = os.path.join(p.cur_dir, p.exogenous_label, p.climate_label, p.model_label, p.counterfactual_label, str(year))
                         hb.create_directories(current_ending_year_dst_dir)

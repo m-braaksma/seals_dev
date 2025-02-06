@@ -1605,6 +1605,11 @@ def allocation_zones(p):
 
 
                 filename = class_label + '_' + str(p.year) + '_' + str(p.previous_year) + '_ha_diff_' + p.exogenous_label + '_' + p.climate_label + '_' + p.model_label + '_' + p.counterfactual_label + '.tif'
+                
+                
+                # p.aggregation_method_string = 'covariate_multiply_regional_change_sum'
+                filename = hb.suri(filename, p.aggregation_method_string)
+                
                 gen_path = os.path.join(p.projected_coarse_change_dir, filename)
                 current_coarse_change_rasters.append(gen_path)
 
@@ -2124,7 +2129,7 @@ def allocation(passed_p=None):
         #     projected_coarse_change_dir = os.path.join(p.coarse_simplified_projected_ha_difference_from_previous_year_dir, p.exogenous_label, p.climate_label, p.model_label, p.counterfactual_label, str(p.year))
                                                        
                                                        
-        filename_end = '_' + str(p.year) + '_' + str(p.previous_year) + '_ha_diff_'  + p.exogenous_label + '_' + p.climate_label + '_' + p.model_label + '_' + p.counterfactual_label + '.tif'
+        filename_end = '_' + str(p.year) + '_' + str(p.previous_year) + '_ha_diff_'  + p.exogenous_label + '_' + p.climate_label + '_' + p.model_label + '_' + p.counterfactual_label + '_' + p.aggregation_method_string + '.tif'
         projected_coarse_change_paths = [os.path.join(p.projected_coarse_change_dir, i + filename_end) for i in p.changing_class_labels]
         
 

@@ -79,6 +79,9 @@ def set_advanced_options(p):
     if not hasattr(p, 'subset_of_blocks_to_run'):
         p.subset_of_blocks_to_run = None # No subset
 
+    if not hasattr(p, 'aggregation_method_string'):
+        p.aggregation_method_string = '' # No subset
+
 
 def initialize_scenario_definitions(p):
     
