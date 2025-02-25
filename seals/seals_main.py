@@ -1507,6 +1507,42 @@ def allocation_zones(p):
         'global_coarse_blocks_list': os.path.join(p.cur_dir, 'global_coarse_blocks_list.csv'),
         'global_processing_blocks_list': os.path.join(p.cur_dir, 'global_processing_blocks_list.csv'),
     }
+    
+    if hasattr(p, 'regional_projections_input_path'):
+
+        if p.regional_projections_input_path:
+            got_path = p.get_path(p.regional_projections_input_path)
+            task_dir = os.path.join(p.intermediate_dir, p.regional_projections_input_path)                            
+
+
+            # Tricky case here, because there was catears in the refpath, it never found it and thus assumed it was an input to be created
+            # This means the path has the extra cur_dir derived paths. Hack here to find the refpath and merge it with intermediate
+            replace_dict = {'<^year^>': str(p.years[0])}
+            regional_change_classes_path1 = hb.replace_in_string_via_dict(got_path, replace_dict)
+                
+            if hb.path_exists(regional_change_classes_path1):
+                regional_change_classes_path = regional_change_classes_path1
+            else:
+                split = regional_change_classes_path1.split(os.path.split(p.cur_dir)[1])[1].replace('\\', '/')[1:]
+                regional_change_classes_path = os.path.join(p.intermediate_dir, split)                            
+            # split = regional_change_classes_path1.split(os.path.split(p.cur_dir)[1])[1].replace('\\', '/')[1:]
+            # regional_change_classes_path = os.path.join(p.intermediate_dir, split)                        
+
+            if hb.path_exists(regional_change_classes_path): # If it's a path, it is required to be based on the regional_change_dir task
+                projected_coarse_change_dir = os.path.join(p.regional_change_dir, p.exogenous_label, p.climate_label, p.model_label, p.counterfactual_label, str(p.year))
+            elif hb.path_exists(task_dir): # if it's a task that exists on the task tree, then that is the scenario root.
+                projected_coarse_change_dir = os.path.join(task_dir, p.exogenous_label, p.climate_label, p.model_label, p.counterfactual_label, str(p.year))
+            else:
+                raise NotImplementedError('No interpretation found for regional_projections_input_path of ' + p.regional_projections_input_path)
+            
+        else:
+            projected_coarse_change_dir = os.path.join(p.intermediate_dir, 'coarse_change', 'coarse_simplified_ha_difference_from_previous_year', p.exogenous_label, p.climate_label, p.model_label, p.counterfactual_label, str(p.year))
+
+    
+    else: # If it's blank, then assume there is no regional change projected and it is only run with a coarse_projected. Might need to rename this.                        
+        projected_coarse_change_dir = os.path.join(p.intermediate_dir, 'coarse_change', 'coarse_simplified_ha_difference_from_previous_year', p.exogenous_label, p.climate_label, p.model_label, p.counterfactual_label, str(p.year))
+
+    p.projected_coarse_change_dir = projected_coarse_change_dir
 
     try:
         if all(hb.path_exists(i) for i in p.combined_block_lists_paths):
@@ -2129,7 +2165,8 @@ def allocation(passed_p=None):
         #     projected_coarse_change_dir = os.path.join(p.coarse_simplified_projected_ha_difference_from_previous_year_dir, p.exogenous_label, p.climate_label, p.model_label, p.counterfactual_label, str(p.year))
                                                        
                                                        
-        filename_end = '_' + str(p.year) + '_' + str(p.previous_year) + '_ha_diff_'  + p.exogenous_label + '_' + p.climate_label + '_' + p.model_label + '_' + p.counterfactual_label + '_' + p.aggregation_method_string + '.tif'
+        filename_end = '_' + str(p.year) + '_' + str(p.previous_year) + '_ha_diff_'  + p.exogenous_label + '_' + p.climate_label + '_' + p.model_label + '_' + p.counterfactual_label + '.tif'
+        # filename_end = '_' + str(p.year) + '_' + str(p.previous_year) + '_ha_diff_'  + p.exogenous_label + '_' + p.climate_label + '_' + p.model_label + '_' + p.counterfactual_label + '_' + p.aggregation_method_string + '.tif'
         projected_coarse_change_paths = [os.path.join(p.projected_coarse_change_dir, i + filename_end) for i in p.changing_class_labels]
         
 

@@ -227,11 +227,31 @@ def regional_change(p):
                             # This is the one i want to use so also save it as the template. Can choose from different algorithms above.
                             alg_to_use_path = hb.suri(output_path_template, 'covariate_additive')
                             hb.path_copy(alg_to_use_path, output_path_template)
+                            5
+                        # Given all of these, copy the one that we want to use to the name without a label
                                 
                                 
 
                 else:
-                    hb.log('No regional change listed, so not shifting regions.')    
+                    hb.log('No regional change listed, but still copying files to this dir so it works with coarse_projections_input_path.')
+                    for c, year in enumerate(p.years):
+                        if c > 0:
+                            previous_year = p.years[c - 1]
+                        else:
+                            previous_year = p.key_base_year
+                        output_dir = os.path.join(p.cur_dir, p.exogenous_label, p.climate_label, p.model_label, p.counterfactual_label, str(year))
+                        for column in p.changing_class_labels:
+                            current_luc_coarse_projections_input_dir = os.path.join(p.coarse_simplified_ha_difference_from_previous_year_dir, p.exogenous_label, p.climate_label, p.model_label, p.counterfactual_label, str(year)) 
+                            current_luc_filename = column + '_' + str(year) + '_' + str(previous_year) + '_ha_diff_' + p.exogenous_label + '_' + p.climate_label + '_' + p.model_label + '_' + p.counterfactual_label + '.tif'
+                            current_luc_coarse_projections_path = os.path.join(current_luc_coarse_projections_input_dir, current_luc_filename)                            
+                            
+                            
+                            
+                            output_filename_template = column + '_' + str(year) + '_' + str(previous_year) + '_ha_diff_' + p.exogenous_label + '_' + p.climate_label + '_' + p.model_label + '_' + p.counterfactual_label + '.tif'
+                            output_path_template = os.path.join(output_dir, output_filename_template)
+                            output_filename_end = '_' + str(year) + '_' + str(previous_year) + '_ha_diff_' + p.exogenous_label + '_' + p.climate_label + '_' + p.model_label + '_' + p.counterfactual_label + '_regional_coarsified.tif'
+                            output_path_end = os.path.join(output_dir, output_filename_end)
+                            hb.path_copy(current_luc_coarse_projections_path, output_path_template)    
 
 
 def coarse_change(p):

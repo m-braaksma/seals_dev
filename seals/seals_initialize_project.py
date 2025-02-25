@@ -123,10 +123,11 @@ def initialize_scenario_definitions(p):
 
     # SEALS is based on an extremely comprehensive region classification system defined in the following geopackage.
     global_regions_vector_ref_path = os.path.join('cartographic', 'ee', 'ee_r264_correspondence.gpkg')
+    p.global_regions_vector_path = p.get_path(global_regions_vector_ref_path)  # Define this even for subglobal runs, 
     
-    if not hb.path_exists(p.regions_vector_path):
-        # p.regions_vector_path = p.get_path(global_regions_vector_ref_path)
-        p.global_regions_vector_path = p.get_path(global_regions_vector_ref_path)    
+    # if not hb.path_exists(p.regions_vector_path):
+    #     # p.regions_vector_path = p.get_path(global_regions_vector_ref_path)
+    #     p.global_regions_vector_path = p.get_path(global_regions_vector_ref_path)    
     
     # Some variables need further processing into attributes, like parsing a correspondence csv into a dict.
     seals_utils.set_derived_attributes(p)
@@ -205,8 +206,8 @@ def build_standard_task_tree(p):
 
     ##### ALLOCATION #####
     p.allocations_task = p.add_iterator(seals_main.allocations)
-    # p.allocation_zones_task = p.add_iterator(seals_main.allocation_zones, run_in_parallel=p.run_in_parallel, parent=p.allocations_task)
-    # p.allocation_task = p.add_task(seals_main.allocation, parent=p.allocation_zones_task, skip_existing=1)
+    p.allocation_zones_task = p.add_iterator(seals_main.allocation_zones, run_in_parallel=p.run_in_parallel, parent=p.allocations_task)
+    p.allocation_task = p.add_task(seals_main.allocation, parent=p.allocation_zones_task, skip_existing=1)
 
     ##### STITCH ZONES #####
     p.stitched_lulc_simplified_scenarios_task = p.add_task(seals_main.stitched_lulc_simplified_scenarios)
