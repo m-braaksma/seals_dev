@@ -2,8 +2,8 @@
 
 
 import os, sys
-import seals_utils
-import seals_initialize_project
+from seals import seals_utils
+from seals import seals_initialize_project
 import hazelbean as hb
 import pandas as pd
 
