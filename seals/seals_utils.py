@@ -652,7 +652,7 @@ def set_derived_attributes(p):
     p.fine_resolution = hb.get_cell_size_from_path(p.base_year_lulc_path)
     p.fine_resolution_arcseconds = hb.pyramid_compatible_resolution_to_arcseconds[p.fine_resolution]
     
-    if hb.is_path_gdal_readable(p.coarse_projections_input_path):
+    if hb.path_exists(p.coarse_projections_input_path):
         p.coarse_resolution = hb.get_cell_size_from_path(p.coarse_projections_input_path)
         p.coarse_resolution_arcseconds = hb.pyramid_compatible_resolution_to_arcseconds[p.coarse_resolution] 
     else:
