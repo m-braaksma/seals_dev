@@ -31,7 +31,7 @@ if __name__ == '__main__':
     p.run_in_parallel = 1 # Must be set before building the task tree if the task tree has parralel iterator tasks.
 
     # Build the task tree via a building function and assign it to p. IF YOU WANT TO LOOK AT THE MODEL LOGIC, INSPECT THIS FUNCTION
-    """START HERE. Figure out how to call DIFFERENT TASK TREES. In the below, we would combine the standard task tree with the custom algorithm task tree.
+    """POSSIBLE STARTING POINT: Figure out how to call DIFFERENT TASK TREES. In the below, we would combine the standard task tree with the custom algorithm task tree.
     Would This meaan that the task_tree name is passed in scenarios.csv? I think so. How is this different than the coarse_algorithm pointing
     to a task? The task approach is substituting a specific input to the same tree whereas this approach of a whole different task tree would
     change everything. What would happen if you tried to run scenarios.csv with a different task tree?

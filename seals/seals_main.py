@@ -2443,7 +2443,7 @@ def stitched_lulc_simplified_scenarios(p):
                         hb.log('Skipping stitching ' + p.lulc_projected_stitched_path + ' because it already exists.')
                     
                     
-                    # START HERE: I have no idea why, but the areas in the NORTH outside of the aereg but inside the bb have change, but the areas IN the aezreg don't have change.
+                    # POSSIBLE STARTING POINT: I have no idea why, but the areas in the NORTH outside of the aereg but inside the bb have change, but the areas IN the aezreg don't have change.
                     if p.clip_to_aoi and p.aoi != 'global' and hb.path_exists(p.aoi_path):
                         hb.timer('start clip')
                         clipped_path = hb.suri(p.lulc_projected_stitched_path, 'clipped')
