@@ -1,10 +1,6 @@
 # initialize_project defines the run() command for the whole project, which takes the project object as its only function.
 
 import hazelbean as hb
-# conda_envs_with_cython = hb.check_which_conda_envs_have_library_installed('cython')
-# print(conda_envs_with_cython)
-
-
 import os, sys
 import hazelbean as hb
 from hazelbean import cloud_utils

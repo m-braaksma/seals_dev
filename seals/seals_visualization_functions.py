@@ -705,8 +705,8 @@ def show_all_class_expansions_vs_change_with_numeric_report_and_validation(lulc_
 
         validation_array_r = hazelbean.calculation_core.aspect_ratio_array_functions.naive_downscale(validation_array.astype(np.float64), multiplication_factor)
 
-        if class_label == 'grassland':
-            print(validation_array_r)
+        # if class_label == 'grassland':
+        #     print(validation_array_r)
 
         im1 = axes_grid[c][0].imshow(change_array_r, vmin=vmin, vmax=vmax, cmap='BrBG')
         im2 = axes_grid[c][1].imshow(combined, vmin=1, vmax=3, cmap='Spectral')

@@ -238,7 +238,7 @@ def combined_trained_coefficients(p):
                     block_index_df_input_list = [str(int(block_indices[c][0])) + '_' + str(int(block_indices[c][1])) + '_' + str(int(p.processing_resolution)) + '_' + str(int(p.processing_resolution))] * len(new_df)
                     new_df['calibration_block_index'] = block_index_df_input_list
                     list_of_dfs.append(new_df)
-                    hb.print_in_place('Reading calibration files: ' + str(c / len(block_indices) * 100.0) + '% ' + block_calibration_path)
+                    # hb.print_in_place('Reading calibration files: ' + str(c / len(block_indices) * 100.0) + '% ' + block_calibration_path)
 
             # LEARNING POINT: When concatenating a donkload of dataframes, calling concat once on a long list of DFs is fastest.
             df = pd.concat(list_of_dfs, axis=0, ignore_index=True)
@@ -415,7 +415,7 @@ def calibration(p):
         L.debug('Checking existing blocks for change in the LUH data and excluding if no change.')
         for c, block in enumerate(old_coarse_blocks_list):
             progress_percent = float(c) / float(len(old_coarse_blocks_list)) * 100.0
-            print( 'Percent finished: ' + str(progress_percent), end='\r', flush=False)
+            print ( 'Percent finished: ' + str(progress_percent), end='\r', flush=False)
             skip = []
             current_coarse_change_rasters = []
             for class_label in p.class_labels:
@@ -873,10 +873,7 @@ def calibration_zones_logit(passed_p=None):
                 rf.run_lasso(name, df_dropped, rf.equation_dict, output_dir=p.cur_dir)
             elif 'logit' in name:
                 rf.run_logit(name, df_dropped, rf.equation_dict, output_dir=p.cur_dir)
-                # summary, regression_result = rf.run_logit(name, df_dropped, rf.equation_dict, output_dir=p.cur_dir)
 
-                # print('summary', summary)
-                # print('regression_result', regression_result)
             else:
                 summary, regression_result = rf.run_sm_lm(name, df_dropped, rf.equation_dict, output_dir=p.cur_dir)
 
@@ -1597,7 +1594,6 @@ def allocation_zones(p):
             global_fine_blocks_list = []
             global_coarse_blocks_list = []
             global_processing_blocks_list = []
-            # print('Subset given: ' + str(p.subset_of_blocks_to_run))
             for i in p.subset_of_blocks_to_run:
                 fine_blocks_list.append(old_fine_blocks_list[i])
                 coarse_blocks_list.append(old_coarse_blocks_list[i])
@@ -1849,7 +1845,6 @@ def allocation(passed_p=None):
         # Check if there is a suitable training tile. IF not, use default.
         # if p.calibrated_parameters_df['type'].isnull().values.any() or len(a) == 0: # NOTE: This is an optimized way to check if there's a nan in an array
         # # if np.isnan(np.sum(p.calibrated_parameters_df['type'].values)): # NOTE: This is an optimized way to check if there's a nan in an array
-        #     print('Unable to load from calibrated parameters file.')
         #     p.calibrated_parameters_df = pd.read_csv(p.local_data_regressors_starting_values_path)
         #     p.calibrated_parameters_df['calibration_block_index'] = p.calibrated_parameters_df.shape[0] * [current_calibration_block_index]
 
@@ -1895,7 +1890,7 @@ def allocation(passed_p=None):
                 join_col = 'spatial_regressor_name'
                 rename_dict ={i: i + '_right' for i in right_df.columns if i != join_col}
                 right_df = right_df.rename(columns=rename_dict)
-                spatial_regressors_df = hb.df_merge(left_df, right_df, left_on=join_col, right_on=join_col)
+                spatial_regressors_df = hb.df_merge(left_df, right_df, left_on=join_col, right_on=join_col, supress_warnings=True)
 
                 for column_label in spatial_regressors_df.columns:
                     if column_label[-6:] != '_right': # HACK
@@ -2687,7 +2682,7 @@ def luh_seals_baseline_adjustment(p):
             coarse_class_ha = pd.read_csv(coarse_class_ha_path)               
             lu_classes_ha = pd.read_csv(lu_classes_ha_csv_path)                
             
-            output_df = hb.df_merge(coarse_class_ha, lu_classes_ha, on='id', how='outer', verbose=False)
+            output_df = hb.df_merge(coarse_class_ha, lu_classes_ha, on='id', how='outer', verbose=False, supress_warnings=True)
             output_df.fillna(0, inplace=True)
             
             
@@ -2876,7 +2871,7 @@ def protection_by_aezreg_to_meet_30by30(p):
         if not hb.path_exists(p.protection_by_aezreg_to_meet_30by30_path):
             df1 = pd.read_csv(protected_areas_all_baseline_sums_path)
             df2 = pd.read_csv(ha_to_protect_sums_path)
-            combined_df = hb.df_merge(df1, df2, on='id', how='outer', verbose=False)
+            combined_df = hb.df_merge(df1, df2, on='id', how='outer', supress_warnings=True, verbose=False)
             combined_df.fillna(0, inplace=True)
             
             combined_df['sum'] = combined_df['ha_to_protect_15min_sums'] + combined_df['protected_areas_all_baseline_15min_sums']

@@ -41,10 +41,9 @@ def kba(p):
         
 def star(p):
     star_threat_input_path = p.get_path('biodiversity', 'star', 'star_threat_input.tif')
-    print('star_threat_input_path', star_threat_input_path)
     
     star_threat_input_path2 = p.get_path('star_threat_input.tif')
-    print('star_threat_input_path2', star_threat_input_path2)
+
     
     # One solution would be to just require all paths to be defined relative to intermediate dir, duplicating the cur_dir approcah? downside here is it would't leverege paralleization, 
     star_threat_path = p.get_path('star_threat.tif') 

@@ -52,8 +52,6 @@ if __name__ == '__main__':
     p.scenario_definitions_path = os.path.join(p.input_dir, p.scenario_definitions_filename)
     seals_initialize_project.initialize_scenario_definitions(p)
         
-
-
     # Set processing resolution: determines how large of a chunk should be processed at a time. 4 deg is about max for 64gb memory systems
     p.processing_resolution = 1.0 # In degrees. Must be in pyramid_compatible_resolutions
 

@@ -260,7 +260,8 @@ def coarse_change(p):
     pass
 
 def download_base_data(p):
-    task_note = """" 
+    task_note = """"    
+    replaced by p.get_path'
 Download the base data. Unlike other tasks, this task puts the files into a tightly defined directory structure rooted at  p.base_data_dir    
     """
     if p.run_this:
@@ -269,7 +270,7 @@ Download the base data. Unlike other tasks, this task puts the files into a tigh
         p.required_base_data_urls = []
         p.required_base_data_dst_paths = []
 
-        print('replaced by p.get_path')
+
         # flattened_list = hb.flatten_nested_dictionary(p.required_base_data_paths, return_type='values')
 
         # hb.debug('Script requires the following Base Data to be in your base_data_dir\n' + hb.pp(p.required_base_data_paths, return_as_string=True))
