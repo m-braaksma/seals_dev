@@ -11,13 +11,12 @@ from hazelbean import cloud_utils
 import pandas as pd
 
 from seals import seals_main
-import seals_utils
-import seals_generate_base_data
-import seals_process_coarse_timeseries
-import seals_visualization_tasks
-import config
-from seals_utils import download_google_cloud_blob
-import seals_tasks
+from seals import seals_utils
+from seals import seals_generate_base_data
+from seals import seals_process_coarse_timeseries
+from seals import seals_visualization_tasks
+from seals import config
+from seals import seals_tasks
 
 
 def set_advanced_options(p):       

@@ -31,7 +31,7 @@ parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(os.path.dirname(os.path.abspath(parent_dir)))
 
 
-import seals_utils
+from seals import seals_utils
 import pandas as pd
 import time
 import math
@@ -48,7 +48,7 @@ L = hb.get_logger()
 
 env_name = sys.executable.split(os.sep)[-2]
 
-import seals_utils
+from seals import seals_utils
 if env_name is not None:
     try:
         seals_utils.recompile_cython(env_name)
@@ -56,17 +56,17 @@ if env_name is not None:
         raise NameError('Failed to compile cython. Most likely this is because you have not set the p.conda_env_name above to the name of your a properly configured environment with Cython installed. The other reason it might fail is if you do not have a C compiler installed.  To fix this, search for ')
 
 try:
-    from seals_cython_functions import calibrate as calibrate
+    from seals.seals_cython_functions import calibrate as calibrate
 except:
     raise NameError('Failed to import a cython-enabled library. Most likely this is because you have not set the p.conda_env_name above to the name of your a properly configured environment with Cython installed. The other reason it might fail is if you do not have a C compiler installed.  To fix this, search for ')
 
 try:
-    import seals_cython_functions as seals_cython_functions
+    from seals import seals_cython_functions as seals_cython_functions
 except:
     raise NameError('Failed to import a cython-enabled library. Most likely this is because you have not set the p.conda_env_name above to the name of your a properly configured environment with Cython installed. The other reason it might fail is if you do not have a C compiler installed.  To fix this, search for ')
 
 try:
-    from seals_cython_functions import calibrate_from_change_matrix
+    from seals.seals_cython_functions import calibrate_from_change_matrix
 except:
     raise NameError('Failed to import a cython-enabled library. Most likely this is because you have not set the p.conda_env_name above to the name of your a properly configured environment with Cython installed. The other reason it might fail is if you do not have a C compiler installed.  To fix this, search for ')
 
@@ -1035,7 +1035,9 @@ def calibration_zones(passed_p=None):
             for c, class_label in enumerate(p.class_labels):
                 path = os.path.join(p.cur_dir, '../calibration_prepare_lulc', class_label + '_observed_change.tif')
                 observed_coarse_change_3d[c] = hb.as_array(path).astype(np.float64)
-            plot_coarse_change_3d(p.cur_dir, observed_coarse_change_3d)
+                
+            from seals import seals_visualization_functions
+            seals_visualization_functions.plot_coarse_change_3d(p.cur_dir, observed_coarse_change_3d)
 
 
         for generation_id in range(p.num_generations):
@@ -1393,8 +1395,8 @@ def calibration_plots(passed_p=None):
                 annotation_text = "asdf"
                 output_path = os.path.join(p.cur_dir, class_label + '_calibration_plot.png')
                 similarity_array = hb.as_array(difference_metric_path)
-
-                show_lulc_class_change_difference(baseline_array, observed_array, projected_array, lulc_class, similarity_array, change_array, annotation_text, output_path)
+                from seals import seals_visualization_functions
+                seals_visualization_functions.show_lulc_class_change_difference(baseline_array, observed_array, projected_array, lulc_class, similarity_array, change_array, annotation_text, output_path)
 
 
 def allocations(p):

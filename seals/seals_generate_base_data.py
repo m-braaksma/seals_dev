@@ -7,7 +7,7 @@ from matplotlib import pyplot as plt
 import geopandas as gpd
 
 
-import seals_utils
+from seals import seals_utils
 
 L = hb.get_logger()
 

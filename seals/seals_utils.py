@@ -498,7 +498,7 @@ def carbon(lulc_path, carbon_zones_path, carbon_table_path, output_path):
     # import gtap_invest
     # import gtap_invest.global_invest
     # import gtap_invest.global_invest.carbon_biophysical
-    import seals_cython_functions as seals_cython_functions
+    from seals import seals_cython_functions as seals_cython_functions
     # from seals_cython_functions import write_carbon_table_to_array
     base_raster_path_band = [(lulc_path, 1), (carbon_zones_path, 1), (lookup_table, 'raw'), (row_names, 'raw'), (col_names, 'raw')]
     hb.raster_calculator_hb(base_raster_path_band, seals_cython_functions.write_carbon_table_to_array, output_path, 6, -9999, hb.DEFAULT_GTIFF_CREATION_TUPLE_OPTIONS_HB)
