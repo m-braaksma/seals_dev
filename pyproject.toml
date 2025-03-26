@@ -2,7 +2,8 @@
 name = "sealsmodel"
 description = "Land-use change model and downscaler"
 requires-python = ">=3.6"
-license = {file = "LICENSE"}
+readme = "README.md"
+license-files = ["LICENSE"]
 maintainers = [
         {name = "Justin Andrew Johnson"}
 ]
@@ -20,16 +21,25 @@ dependencies = [
         "scipy",
         "scikit-learn"
 ]
-
-# These attributes are pulled from setup.py instead of being defined here
 dynamic = ["version"]
 
-[projet.urls]
+[project.urls]
 repository = "https://github.com/jandrewjohnson/seals_dev"
 
 [build-system]
 requires = [
-        "setuptools>=61", "wheel", "cython>3.0.0",
+        "setuptools>=74.1", "wheel", "cython>3.0.0",
         'oldest-supported-numpy; python_version<"3.8"',
         'numpy>2; python_version>="3.8"',
 ]
+
+[tool.setuptools]
+packages = ["seals"]
+package-data = { "seals" = ["*.pyx"] }
+ext-modules = [
+    { name = "seals.seals_cython_functions", sources = ["seals/seals_cython_functions.pyx"] }
+]
+
+[tool.setuptools_scm]
+version_scheme = "post-release"
+local_scheme = "node-and-date"
