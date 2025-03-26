@@ -1,84 +1,84 @@
+import multiprocessing
 import os
+
+import geopandas as gpd
 import hazelbean as hb
 import numpy as np
 import pandas as pd
-import multiprocessing
 from matplotlib import pyplot as plt
-import geopandas as gpd
 
-
-import seals_utils
+from . import seals_utils
 
 L = hb.get_logger()
 
 def aligned_habitat_raster(p):
-    
+
     if p.run_this:
         intput_raster_path = "C:/Users/jajohns/Files/gtap_invest/projects/habitat/input/preliminary_network_zt_run3.tif"
         aligned_habitat_raster_path = os.path.join(p.cur_dir, 'aligned_habitat_raster.tif')
         match_path = "C:/Users/jajohns/Files/gtap_invest/projects/habitat/input/quebec_zone_ids.tif"
         if not hb.path_exists(aligned_habitat_raster_path):
             hb.resample_to_match(intput_raster_path, match_path, aligned_habitat_raster_path)
-            
+
         just_existing_protection_path = os.path.join(p.cur_dir, 'just_existing_protection.tif')
         if not hb.path_exists(just_existing_protection_path):
             hb.raster_calculator_flex(aligned_habitat_raster_path, lambda x: np.where(x == 2, 1, 0), output_path=just_existing_protection_path)
-           
+
 def biodiversity(p):
     # This is a dummy task to group things.
-    pass 
+    pass
 
 def kba(p):
-    
-    kbas_vector_path = p.get_path('biodiversity', 'kba', 'KBAsGlobal_2023_September_02_POL.shp', create_shortcut=True)    
+
+    kbas_vector_path = p.get_path('biodiversity', 'kba', 'KBAsGlobal_2023_September_02_POL.shp', create_shortcut=True)
     p.kbas_rasterized_path = p.get_path('biodiversity', 'kba', 'kbas.tif', create_shortcut=True, verbose=True)
     if not hb.path_exists(p.kbas_rasterized_path):
         hb.convert_polygons_to_id_raster(kbas_vector_path, p.kbas_rasterized_path, p.base_year_lulc_path,
                                 id_column_label='SitRecID', data_type=5, ndv=-9999, all_touched=False, compress=True)
-        
+
         hb.make_path_global_pyramid(p.kbas_rasterized_path)
-        
-        
+
+
 def star(p):
     star_threat_input_path = p.get_path('biodiversity', 'star', 'star_threat_input.tif')
     print('star_threat_input_path', star_threat_input_path)
-    
+
     star_threat_input_path2 = p.get_path('star_threat_input.tif')
     print('star_threat_input_path2', star_threat_input_path2)
-    
-    # One solution would be to just require all paths to be defined relative to intermediate dir, duplicating the cur_dir approcah? downside here is it would't leverege paralleization, 
-    star_threat_path = p.get_path('star_threat.tif') 
-    
+
+    # One solution would be to just require all paths to be defined relative to intermediate dir, duplicating the cur_dir approcah? downside here is it would't leverege paralleization,
+    star_threat_path = p.get_path('star_threat.tif')
+
     if not hb.path_exists(star_threat_path):
         # WTF apparently this was all shifted by a random amount.?
         shift = 90.0 - 83.6361111111106226
-        
-        
+
+
         geotransform_input = hb.get_geotransform_path(star_threat_input_path)
         geotransform = list(geotransform_input)
-        
+
         # Write a new file that corrects the weird shift without modifying the original file.
         star_threat_shifted_path = p.get_path('star_threat_shifted.tif')
-        
+
         if geotransform[3] == 90.0:
-            geotransform[3] -= shift        
+            geotransform[3] -= shift
             if not hb.path_exists(star_threat_shifted_path):
                 hb.set_geotransform_to_tuple(star_threat_input_path, geotransform, output_path=star_threat_shifted_path)
-        
+
         # INTERSTING IMPLICATION: Because the cur_dir is already representing the base_data nesting location, adding it again doesn't work makes it be repeated 2x
         star_threat_padded_path = p.get_path('star_threat_padded.tif')
         if not hb.path_exists(star_threat_padded_path):
             hb.fill_to_match_extent(star_threat_shifted_path, p.aoi_ha_per_cell_fine_path, output_path=star_threat_padded_path, fill_value=-9999., remove_temporary_files=False)
-        
-        star_threat_path = p.get_path('star_threat.tif') 
+
+        star_threat_path = p.get_path('star_threat.tif')
         if not hb.path_exists(star_threat_path):
             hb.make_path_global_pyramid(star_threat_padded_path, output_path=star_threat_path, verbose=True)
         pass
-    
-    
+
+
 def fine_processed_inputs(p):
     p.task_note = """
-    Contains all of the fine_processed_inputs that must be created given the state of the base_data and the aoi chosen. 
+    Contains all of the fine_processed_inputs that must be created given the state of the base_data and the aoi chosen.
     If the aoi is global, then the fine_processed_inputs will be the same as the base_data and wont be generated, assuming that year exists in the base_data. If that year doesn't exist, you may want to promote the results of this task to base_data status.
     Note also that some files, when run non-global, still will create a local copy of the file even tho in principle it could just access the rc_rowcol of the global version. This is for visualizatino tasks later on.
     Another case would be if a function (like raster_calculator) can only operate on paths. LAter on i would like to be able to pass the rc_rowcol to it and still operate on the single global version via pyramids.
@@ -89,15 +89,15 @@ def fine_processed_inputs(p):
 
 def lulc_clip(p):
     # Clip the fine LULC to the project AOI
-    
+
     if p.run_this:
 
         # In the event that aoi is not global, we will store aoi_lulc and global_lulc paths. In the global version
         # both of these dicts will be there, but they will be identical.
         p.base_data_lulc_src_paths = {}
         p.aoi_lulc_src_paths = {}
-        p.lulc_src_paths = {}  
-        
+        p.lulc_src_paths = {}
+
         for index, row in p.scenarios_df.iterrows():
             seals_utils.assign_df_row_to_object_attributes(p, row)
 
@@ -109,7 +109,7 @@ def lulc_clip(p):
                     for year in p.years:
                         p.base_data_lulc_src_paths[year] = os.path.join(base_data_lulc_src_dir, src_filename_start + str(year) + '.tif')
                         p.aoi_lulc_src_paths[year] = os.path.join(p.fine_processed_inputs_dir, 'lulc', p.lulc_src_label, src_filename_start + str(year) + '.tif')
-                        p.lulc_src_paths[year] = p.aoi_lulc_src_paths[year] 
+                        p.lulc_src_paths[year] = p.aoi_lulc_src_paths[year]
 
                         if not hb.path_exists(p.aoi_lulc_src_paths[year]):
                             hb.create_directories(p.aoi_lulc_src_paths[year])
@@ -119,12 +119,12 @@ def lulc_clip(p):
                         # filename = 'binary_' + p.lulc_src_label + '_' + p.lulc_simplification_label + '_' + str(year) + '_class_' + str(class_label) + '.tif'
                         # possible_dir = os.path.join('lulc', p.lulc_src_label, p.lulc_simplification_label, 'binaries', str(year))
                         # output_path = hb.get_first_extant_path(search_path, [p.fine_processed_inputs_dir, p.input_dir, p.base_data_dir])
-                            
+
                         search_path = os.path.join('lulc', p.lulc_src_label, src_filename_start + str(year) + '.tif')
                         # p.base_data_lulc_src_paths[year] = hb.get_first_extant_path(search_path, [p.fine_processed_inputs_dir, p.input_dir, p.base_data_dir])
                         p.base_data_lulc_src_paths[year] = p.get_path(search_path)
-                        p.aoi_lulc_src_paths[year] = p.base_data_lulc_src_paths[year] 
-                        p.lulc_src_paths[year] = p.base_data_lulc_src_paths[year] 
+                        p.aoi_lulc_src_paths[year] = p.base_data_lulc_src_paths[year]
+                        p.lulc_src_paths[year] = p.base_data_lulc_src_paths[year]
 
                         if not hb.path_exists(p.aoi_lulc_src_paths[year]):
                             hb.create_directories(p.aoi_lulc_src_paths[year])
@@ -134,19 +134,19 @@ def lulc_clip(p):
 
 def lulc_simplifications(p):
     # Simplify the LULC
-    
+
     if p.run_this:
-        
+
         p.base_data_lulc_simplified_paths = {}
         p.aoi_lulc_simplified_paths = {}
         p.lulc_simplified_paths = {}
-        
+
         for index, row in p.scenarios_df.iterrows():
             seals_utils.assign_df_row_to_object_attributes(p, row)
-            
-            base_data_lulc_simplified_dir = os.path.join(p.base_data_dir, 'lulc', p.lulc_src_label, p.lulc_simplification_label)   
+
+            base_data_lulc_simplified_dir = os.path.join(p.base_data_dir, 'lulc', p.lulc_src_label, p.lulc_simplification_label)
             simplified_filename_start = 'lulc_' + p.lulc_src_label + '_' + p.lulc_simplification_label + '_'
-        
+
 
             if p.scenario_type == 'baseline':
                 if p.aoi != 'global':
@@ -154,7 +154,7 @@ def lulc_simplifications(p):
 
                         p.base_data_lulc_simplified_paths[year] = os.path.join(base_data_lulc_simplified_dir, simplified_filename_start + str(year) + '.tif')
                         p.aoi_lulc_simplified_paths[year] = os.path.join(p.fine_processed_inputs_dir, 'lulc', p.lulc_src_label, p.lulc_simplification_label, simplified_filename_start + str(year) + '.tif')
-                        p.lulc_simplified_paths[year] = p.aoi_lulc_simplified_paths[year] 
+                        p.lulc_simplified_paths[year] = p.aoi_lulc_simplified_paths[year]
 
                         if not hb.path_exists(p.aoi_lulc_simplified_paths[year]):
                             hb.create_directories(p.aoi_lulc_simplified_paths[year])
@@ -164,7 +164,7 @@ def lulc_simplifications(p):
                                 rules = p.lulc_correspondence_dict['src_to_dst_reclassification_dict']
                                 output_path = p.aoi_lulc_simplified_paths[year]
                                 hb.reclassify_raster_hb(p.lulc_src_paths[year], rules, output_path=output_path, output_data_type=1, array_threshold=10000, match_path=p.lulc_src_paths[year], verbose=False)
-                
+
                 else:
                     for year in p.years:
                         search_path = os.path.join('lulc', p.lulc_src_label, p.lulc_simplification_label, simplified_filename_start + str(year) + '.tif')
@@ -186,17 +186,17 @@ def lulc_simplifications(p):
 
 def lulc_binaries(p):
     """Convert the simplified LULC into 1 binary presence map for each simplified LUC"""
-    
+
     if p.run_this:
 
         p.base_data_binary_paths = {}
         p.aoi_binary_paths = {}
-        p.binary_paths = {}  
+        p.binary_paths = {}
 
         for index, row in p.scenarios_df.iterrows():
-            seals_utils.assign_df_row_to_object_attributes(p, row)     
-            
-            base_data_lulc_binaries_dir = os.path.join(p.base_data_dir, 'lulc', p.lulc_src_label, p.lulc_simplification_label, 'binaries')   
+            seals_utils.assign_df_row_to_object_attributes(p, row)
+
+            base_data_lulc_binaries_dir = os.path.join(p.base_data_dir, 'lulc', p.lulc_src_label, p.lulc_simplification_label, 'binaries')
             binary_filename_start = 'binary_' + p.lulc_src_label + '_' + p.lulc_simplification_label + '_'
 
             if p.scenario_type == 'baseline':
@@ -208,10 +208,10 @@ def lulc_binaries(p):
                         p.binary_paths[year] = {}
 
                         for class_label in p.all_class_labels:
-                            
+
                             p.base_data_binary_paths[year][class_label] = os.path.join(base_data_lulc_binaries_dir, str(year), binary_filename_start + str(year) + '_' + class_label +  '.tif')
                             p.aoi_binary_paths[year][class_label] = os.path.join(p.fine_processed_inputs_dir, 'lulc', p.lulc_src_label, p.lulc_simplification_label, 'binaries', str(year), binary_filename_start + str(year) + '_' + class_label  + '.tif')
-                            p.binary_paths[year][class_label] = p.aoi_lulc_simplified_paths[year]   
+                            p.binary_paths[year][class_label] = p.aoi_lulc_simplified_paths[year]
 
                             if not hb.path_exists(p.aoi_binary_paths[year][class_label]):
                                 hb.create_directories(p.aoi_binary_paths[year][class_label])
@@ -220,7 +220,7 @@ def lulc_binaries(p):
                                 else:
                                     output_path = p.aoi_binary_paths[year][class_label]
                                     hb.raster_calculator_flex(p.lulc_simplified_paths[year], lambda x: np.where(x == int(p.lulc_correspondence_dict['dst_labels_to_ids'][class_label]), 1, 0), output_path=output_path)
-                        
+
                 else:
                     for year in p.years:
 
@@ -230,14 +230,14 @@ def lulc_binaries(p):
 
                         for class_label in p.all_class_labels:
 
- 
+
 
                             search_path = os.path.join('lulc', p.lulc_src_label, p.lulc_simplification_label, 'binaries', str(year), binary_filename_start + str(year) + '_' + class_label +  '.tif')
                             found_path = hb.get_first_extant_path(search_path, [p.fine_processed_inputs_dir, p.input_dir, p.base_data_dir])
                             p.base_data_binary_paths[year][class_label] = found_path
                             p.aoi_binary_paths[year][class_label] = found_path
                             p.binary_paths[year][class_label] = found_path
-                            
+
 
                             if not hb.path_exists(p.aoi_binary_paths[year][class_label]):
                                 hb.create_directories(p.aoi_binary_paths[year][class_label])
@@ -247,7 +247,7 @@ def lulc_binaries(p):
 
 def generated_kernels(p):
     """Fast function that creates several tiny geotiffs of gaussian-like kernels for later use in ffn_convolve."""
-    
+
     if p.run_this:
         starting_value = 1.0
         for halflife in p.gaussian_sigmas_to_test:
@@ -283,7 +283,7 @@ def lulc_convolutions(p):
         # else:
         #     years_to_convolve = [p.base_year]
 
-        
+
         if p.years_to_convolve_override is not None:
             years_to_convolve = p.years_to_convolve_override
         else:
@@ -304,11 +304,11 @@ def lulc_convolutions(p):
                     current_file_root = 'binary_'+p.lulc_src_label+'_'+p.lulc_simplification_label+'_'+str(year)+'_' + str(label)
                     current_input_binary_path = os.path.join(p.fine_processed_inputs_dir, 'lulc', p.lulc_src_label, p.lulc_simplification_label, 'binaries', str(year), 'binary_'+p.lulc_src_label+'_'+p.lulc_simplification_label+'_'+str(year)+'_' + str(label)+'.tif')
                     # current_input_binary_path = p.lulc_simplified_binary_paths[current_file_root]
-                    
+
 
                     current_convolution_path = os.path.join(p.fine_processed_inputs_dir, 'lulc', 'esa', p.lulc_simplification_label, 'convolutions', str(year), 'convolution_'+p.lulc_src_label+'_'+p.lulc_simplification_label+'_'+str(year)+'_' + str(label) + '_gaussian_' + str(sigma) + '.tif')
                     current_convolution_relative_path = os.path.join('lulc', 'esa', p.lulc_simplification_label, 'convolutions', str(year), 'convolution_'+p.lulc_src_label+'_'+p.lulc_simplification_label+'_'+str(year)+'_' + str(label) + '_gaussian_' + str(sigma) + '.tif')
-                    
+
                     this_path = p.get_path(current_convolution_relative_path, prepend_possible_dirs=[p.fine_processed_inputs_dir], verbose=False)
                     p.lulc_simplified_convolution_paths[current_convolution_name] = this_path
                     # Check to see if it exists in the present base data
@@ -373,7 +373,7 @@ def local_data_regressors_starting_values(p):
             # for class binaries
             for c, label in enumerate(p.all_class_labels):
                 base_data_path = os.path.join(p.base_data_dir, 'lulc', 'esa',  p.lulc_simplification_label, 'binaries', str(p.key_base_year), 'class_' + str(p.all_class_labels[c]) + '.tif')
-                
+
                 extant_path = os.path.join(p.fine_processed_inputs_dir, 'lulc', 'esa',  p.lulc_simplification_label, 'binaries', str(p.key_base_year), 'class_' + str(p.all_class_labels[c]) + '.tif')
 
 
@@ -446,10 +446,11 @@ def prepare_global_lulc_DEPRECATED(p):
 
 
     if p.run_this:
-        
+
         # from hazelbean.calculation_core import cython_functions
-        from hazelbean.calculation_core.cython_functions import calc_change_matrix_of_two_int_arrays
-        
+        from hazelbean.calculation_core.cython_functions import \
+            calc_change_matrix_of_two_int_arrays
+
         t1 = hb.ArrayFrame(p.global_lulc_t1_path)
         t2 = hb.ArrayFrame(p.global_lulc_t2_path)
         t3 = hb.ArrayFrame(p.global_lulc_t3_path)  # Currently unused but could be for validation.
@@ -578,10 +579,10 @@ def calc_observed_lulc_change(passed_p=None):
 
     full_change_matrix_no_diagonal_path = os.path.join(p.cur_dir, 'full_change_matrix_no_diagonal.tif')
     if p.run_this:
-        from hazelbean.calculation_core.cython_functions import calc_change_matrix_of_two_int_arrays
+        from hazelbean.calculation_core.cython_functions import \
+            calc_change_matrix_of_two_int_arrays
+
         # if p.run_this and not os.path.exists(full_change_matrix_no_diagonal_path):
-
-
         # Clip ha_per_cell and use it as the match
         ha_per_cell = hb.load_geotiff_chunk_by_cr_size(p.global_ha_per_cell_15m_path, p.coarse_blocks_list)
 

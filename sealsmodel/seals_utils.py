@@ -1,20 +1,25 @@
-import logging, os, math, sys
-from osgeo import gdal
-import numpy as np
-import scipy
-import scipy.stats as st
-import scipy.ndimage
-import hazelbean as hb
-import pandas as pd
-import geopandas as gpd
+import logging
+import math
+import os
+import sys
 # from hazelbean.ui import model, inputs
 from collections import OrderedDict
-from matplotlib import pyplot as plt
+
+import geopandas as gpd
+import hazelbean as hb
 # import geoecon as ge
 import matplotlib
 import matplotlib.gridspec as gridspec
-from mpl_toolkits.axes_grid1.axes_divider import make_axes_locatable
+import numpy as np
+import pandas as pd
+import scipy
+import scipy.ndimage
+import scipy.stats as st
 from google.cloud import storage
+from matplotlib import pyplot as plt
+from mpl_toolkits.axes_grid1.axes_divider import make_axes_locatable
+from osgeo import gdal
+
 # from seals import seals_initialize_project
 
 
@@ -340,6 +345,7 @@ def calc_change_vector_of_change_matrix(change_matrix):
 # from pygeo.geoprocessing import convolve_2d
 from pygeoprocessing import convolve_2d
 
+
 def fft_gaussian(signal_path, kernel_path, target_path, target_nodata=-9999.0, compress=False, n_threads=1):
     """
     Blur the input with a guassian using sigma (higher sigma means more blur). In areas of the blur above the threshold,
@@ -496,7 +502,8 @@ def carbon(lulc_path, carbon_zones_path, carbon_table_path, output_path):
     # import gtap_invest
     # import gtap_invest.global_invest
     # import gtap_invest.global_invest.carbon_biophysical
-    import seals_cython_functions as seals_cython_functions
+    from . import seals_cython_functions as seals_cython_functions
+
     # from seals_cython_functions import write_carbon_table_to_array
     base_raster_path_band = [(lulc_path, 1), (carbon_zones_path, 1), (lookup_table, 'raw'), (row_names, 'raw'), (col_names, 'raw')]
     hb.raster_calculator_hb(base_raster_path_band, seals_cython_functions.write_carbon_table_to_array, output_path, 6, -9999, hb.DEFAULT_GTIFF_CREATION_TUPLE_OPTIONS_HB)
@@ -563,22 +570,22 @@ def calculate_carbon_naively(luh_ag_expansion_ha_path,
 
 
 def assign_defaults_from_model_spec(input_object, model_spec_dict):
-    
+
     # Next version will be replaced by seals_model_spec version.
-    
+
     for k, v in model_spec_dict.items():
         if not hasattr(input_object, k):
             setattr(input_object, k, v)
 
-            
+
 def assign_df_row_to_object_attributes(input_object, input_row):
-    # srtip() 
-    # Rules: 
+    # srtip()
+    # Rules:
     # First check if is numeric
     # Then check if has extension, is path
     for attribute_name, attribute_value in list(zip(input_row.index, input_row.values)):
-  
-        try: 
+
+        try:
             float(attribute_value)
             is_floatable = True
         except:
@@ -588,14 +595,14 @@ def assign_df_row_to_object_attributes(input_object, input_row):
             is_intable = True
         except:
             is_intable = False
-        
+
         if attribute_name == 'calibration_parameters_source':
             pass
         # NOTE Clever use of p.get_path() here.
-        if '.' in str(attribute_value) and not is_floatable: # Might be a path            
+        if '.' in str(attribute_value) and not is_floatable: # Might be a path
             path = input_object.get_path(attribute_value)
             setattr(input_object, attribute_name, path)
-            
+
         elif 'year' in attribute_name:
             if ' ' in str(attribute_value):
                 new_attribute_value = []
@@ -606,7 +613,7 @@ def assign_df_row_to_object_attributes(input_object, input_row):
                         new_attribute_value.append(str(i))
                 attribute_value = new_attribute_value
 
-                # attribute_value = [int(i) if 'nan' not in str(i) and intable else None for i in attribute_value.split(' ')]  
+                # attribute_value = [int(i) if 'nan' not in str(i) and intable else None for i in attribute_value.split(' ')]
             elif is_intable:
                 if attribute_name == 'key_base_year':
                     attribute_value = int(attribute_value)
@@ -626,13 +633,13 @@ def assign_df_row_to_object_attributes(input_object, input_row):
 
         elif 'dimensions' in attribute_name:
             if ' ' in str(attribute_value):
-                attribute_value = [str(i) if 'nan' not in str(i) else None for i in attribute_value.split(' ')]  
+                attribute_value = [str(i) if 'nan' not in str(i) else None for i in attribute_value.split(' ')]
             else:
                 if 'nan' not in str(attribute_value):
                     attribute_value = [str(attribute_value)]
                 else:
                     attribute_value = None
-                  
+
             setattr(input_object, attribute_name, attribute_value)
         else:
             if str(attribute_value).lower() == 'nan':
@@ -641,37 +648,37 @@ def assign_df_row_to_object_attributes(input_object, input_row):
             else:
                 # Check if the t string
                 setattr(input_object, attribute_name, attribute_value)
-                
+
     model_spec = {}
     model_spec['regional_projections_input_path'] = ''
     assign_defaults_from_model_spec(input_object, model_spec)
 
 def set_derived_attributes(p):
-    
+
     # Resolutions come from the fine and coarse maps
     p.fine_resolution = hb.get_cell_size_from_path(p.base_year_lulc_path)
     p.fine_resolution_arcseconds = hb.pyramid_compatible_resolution_to_arcseconds[p.fine_resolution]
-    
+
     if hb.is_path_gdal_readable(p.coarse_projections_input_path):
         p.coarse_resolution = hb.get_cell_size_from_path(p.coarse_projections_input_path)
-        p.coarse_resolution_arcseconds = hb.pyramid_compatible_resolution_to_arcseconds[p.coarse_resolution] 
+        p.coarse_resolution_arcseconds = hb.pyramid_compatible_resolution_to_arcseconds[p.coarse_resolution]
     else:
         p.coarse_resolution_arcseconds = float(p.coarse_projections_input_path)
-        p.coarse_resolution = hb.pyramid_compatible_resolutions[p.coarse_resolution_arcseconds]    
-     
+        p.coarse_resolution = hb.pyramid_compatible_resolutions[p.coarse_resolution_arcseconds]
+
     p.fine_resolution_degrees = hb.pyramid_compatible_resolutions[p.fine_resolution_arcseconds]
     p.coarse_resolution_degrees = hb.pyramid_compatible_resolutions[p.coarse_resolution_arcseconds]
     p.fine_resolution = p.fine_resolution_degrees
     p.coarse_resolution = p.coarse_resolution_degrees
-    
-       
-    
+
+
+
     # Set the derived-attributes too whenever the core attributes are set
     p.lulc_correspondence_path = p.get_path(p.lulc_correspondence_path)
     # p.lulc_correspondence_path = hb.get_first_extant_path(p.lulc_correspondence_path, [p.input_dir, p.base_data_dir])
     p.lulc_correspondence_dict = hb.utils.get_reclassification_dict_from_df(p.lulc_correspondence_path, 'src_id', 'dst_id', 'src_label', 'dst_label')
-    
-    
+
+
     p.coarse_correspondence_path = p.get_path(p.coarse_correspondence_path)
     # p.coarse_correspondence_path = hb.get_first_extant_path(p.coarse_correspondence_path, [p.input_dir, p.base_data_dir])
     p.coarse_correspondence_dict = hb.utils.get_reclassification_dict_from_df(p.coarse_correspondence_path, 'src_id', 'dst_id', 'src_label', 'dst_label')
@@ -701,25 +708,25 @@ def set_derived_attributes(p):
     p.changing_coarse_correspondence_class_labels = [str(p.coarse_correspondence_dict['dst_ids_to_labels'][i]) for i in p.changing_coarse_correspondence_class_indices if i not in p.nonchanging_class_indices]
     p.changing_lulc_correspondence_class_indices = [int(i) for i in p.lulc_correspondence_class_indices if i not in p.nonchanging_class_indices] # These are the indices of classes THAT CAN EXPAND/CONTRACT
     p.changing_lulc_correspondence_class_labels = [str(p.lulc_correspondence_dict['dst_ids_to_labels'][i]) for i in p.changing_lulc_correspondence_class_indices if i not in p.nonchanging_class_indices]
-       
+
     # From the changing/nonchanging class sets as defined in the lulc correspondence AND the coarse correspondence.
-    p.changing_class_indices = p.changing_coarse_correspondence_class_indices + [i for i in p.changing_lulc_correspondence_class_indices if i not in p.changing_coarse_correspondence_class_indices] 
+    p.changing_class_indices = p.changing_coarse_correspondence_class_indices + [i for i in p.changing_lulc_correspondence_class_indices if i not in p.changing_coarse_correspondence_class_indices]
     p.changing_class_labels = p.changing_coarse_correspondence_class_labels + [i for i in p.changing_lulc_correspondence_class_labels if i not in p.changing_coarse_correspondence_class_labels]
-    
-    p.all_class_indices = p.coarse_correspondence_class_indices + [i for i in p.lulc_correspondence_class_indices if i not in p.coarse_correspondence_class_indices] 
+
+    p.all_class_indices = p.coarse_correspondence_class_indices + [i for i in p.lulc_correspondence_class_indices if i not in p.coarse_correspondence_class_indices]
     p.all_class_labels = p.coarse_correspondence_class_labels + [i for i in p.lulc_correspondence_class_labels if i not in p.coarse_correspondence_class_labels]
     p.class_labels = p.all_class_labels
-    
+
     # Check if processing_resolution exists
     if not hasattr(p, 'processing_resolution'):
         p.processing_resolution = 1.0
-    
+
     p.processing_resolution_arcseconds = p.processing_resolution * 3600.0 # MUST BE FLOAT
-            
+
 def download_google_cloud_blob(bucket_name, source_blob_name, credentials_path, destination_file_name, chunk_size=262144*5,):
-    
+
     print("""DEPRECATED FOR HB VERSION. Downloads a blob from the bucket.""")
-    
+
     # raise
     require_database = True
     if hb.path_exists(credentials_path) and require_database:
@@ -759,30 +766,30 @@ def generate_scenarios_csv_and_put_in_input_dir(p):
     # Yet, I still want to be able to iterate over it. So thus, I need to GENERATE the scenarios_df from the project_flow
     # attributes
     list_of_attributes_to_write = [
-        	
-        'scenario_label',	
-        'scenario_type',	
-        'aoi',	
-        'exogenous_label',	
-        'climate_label',	
-        'model_label',	
-        'counterfactual_label',	
-        'years',	
-        'baseline_reference_label',	
-        'base_years',	
+
+        'scenario_label',
+        'scenario_type',
+        'aoi',
+        'exogenous_label',
+        'climate_label',
+        'model_label',
+        'counterfactual_label',
+        'years',
+        'baseline_reference_label',
+        'base_years',
         'key_base_year',
-        'comparison_counterfactual_labels',	
-        'time_dim_adjustment',	
-        'coarse_projections_input_path',	
-        'lulc_src_label',	
-        'lulc_simplification_label',	
-        'lulc_correspondence_path',	
-        'coarse_src_label',	
-        'coarse_simplification_label',	
-        'coarse_correspondence_path',	
-        'lc_class_varname',	
-        'dimensions',	
-        'calibration_parameters_source',	
+        'comparison_counterfactual_labels',
+        'time_dim_adjustment',
+        'coarse_projections_input_path',
+        'lulc_src_label',
+        'lulc_simplification_label',
+        'lulc_correspondence_path',
+        'coarse_src_label',
+        'coarse_simplification_label',
+        'coarse_correspondence_path',
+        'lc_class_varname',
+        'dimensions',
+        'calibration_parameters_source',
         'base_year_lulc_path',
     ]
 
@@ -842,11 +849,11 @@ def set_attributes_to_default(p):
     # Set all ProjectFlow attributes to SEALS default.
     # This is used if the user has never run something before, and therefore doesn't
     # have a scenario_definitions.csv in their input dir.
-    # This function will set the attributes, and can be paired with 
+    # This function will set the attributes, and can be paired with
     # generate_scenarios_csv_and_put_in_input_dir to write the file.
 
     ###--- SET DEFAULTS ---###
-    
+
     # String that uniquely identifies the scenario. Will be referenced by other scenarios for comparison.
     p.scenario_label = 'ssp2_rcp45_luh2-globio_bau'
 
@@ -942,7 +949,7 @@ def set_attributes_to_default(p):
     # be 'from_calibration' indicating that this run will actually create the calibration``
     # or it can be from a tile-designated file of location-specific regressor variables.
     p.calibration_parameters_source = 'seals/default_inputs/default_global_coefficients.csv'
-    
+
     # Some data, set to default inputs here, are required to make the model run becayse they determine which classes, which resolutions, ...
     p.key_base_year_lulc_simplified_path = os.path.join('lulc', p.lulc_src_label, p.lulc_simplification_label, 'lulc_' + p.lulc_src_label + '_' + p.lulc_simplification_label + '_' + str(p.key_base_year) + '.tif')
     p.key_base_year_lulc_src_path = os.path.join('lulc', p.lulc_src_label, 'lulc_' + p.lulc_src_label  + '_' + str(p.key_base_year) + '.tif')
@@ -956,11 +963,11 @@ def set_attributes_to_dynamic_default(p):
     # Set all ProjectFlow attributes to SEALS default.
     # This is used if the user has never run something before, and therefore doesn't
     # have a scenario_definitions.csv in their input dir.
-    # This function will set the attributes, and can be paired with 
+    # This function will set the attributes, and can be paired with
     # generate_scenarios_csv_and_put_in_input_dir to write the file.
 
     ###--- SET DEFAULTS ---###
-    
+
     # String that uniquely identifies the scenario. Will be referenced by other scenarios for comparison.
     p.scenario_label = 'ssp2_rcp45_luh2-globio_bau'
 
@@ -1056,7 +1063,7 @@ def set_attributes_to_dynamic_default(p):
     # be 'from_calibration' indicating that this run will actually create the calibration``
     # or it can be from a tile-designated file of location-specific regressor variables.
     p.calibration_parameters_source = 'seals/default_inputs/default_global_coefficients.csv'
-    
+
     # Some data, set to default inputs here, are required to make the model run becayse they determine which classes, which resolutions, ...
     p.key_base_year_lulc_simplified_path = os.path.join('lulc', p.lulc_src_label, p.lulc_simplification_label, 'lulc_' + p.lulc_src_label + '_' + p.lulc_simplification_label + '_' + str(p.key_base_year) + '.tif')
     p.key_base_year_lulc_src_path = os.path.join('lulc', p.lulc_src_label, 'lulc_' + p.lulc_src_label  + '_' + str(p.key_base_year) + '.tif')
@@ -1069,11 +1076,11 @@ def set_attributes_to_dynamic_default_with_different_inputs(p):
     # Set all ProjectFlow attributes to SEALS default.
     # This is used if the user has never run something before, and therefore doesn't
     # have a scenario_definitions.csv in their input dir.
-    # This function will set the attributes, and can be paired with 
+    # This function will set the attributes, and can be paired with
     # generate_scenarios_csv_and_put_in_input_dir to write the file.
 
     ###--- SET DEFAULTS ---###
-    
+
     # String that uniquely identifies the scenario. Will be referenced by other scenarios for comparison.
     p.scenario_label = 'ssp2_rcp45_luh2-globio_bau'
 
@@ -1169,7 +1176,7 @@ def set_attributes_to_dynamic_default_with_different_inputs(p):
     # be 'from_calibration' indicating that this run will actually create the calibration``
     # or it can be from a tile-designated file of location-specific regressor variables.
     p.calibration_parameters_source = 'seals/default_inputs/default_global_coefficients.csv'
-    
+
     # Some data, set to default inputs here, are required to make the model run becayse they determine which classes, which resolutions, ...
     p.key_base_year_lulc_simplified_path = os.path.join('lulc', p.lulc_src_label, p.lulc_simplification_label, 'lulc_' + p.lulc_src_label + '_' + p.lulc_simplification_label + '_' + str(p.key_base_year) + '.tif')
     p.key_base_year_lulc_src_path = os.path.join('lulc', p.lulc_src_label, 'lulc_' + p.lulc_src_label  + '_' + str(p.key_base_year) + '.tif')
@@ -1183,11 +1190,11 @@ def set_attributes_to_dynamic_many_year_default(p):
     # Set all ProjectFlow attributes to SEALS default.
     # This is used if the user has never run something before, and therefore doesn't
     # have a scenario_definitions.csv in their input dir.
-    # This function will set the attributes, and can be paired with 
+    # This function will set the attributes, and can be paired with
     # generate_scenarios_csv_and_put_in_input_dir to write the file.
 
     ###--- SET DEFAULTS ---###
-    
+
     # String that uniquely identifies the scenario. Will be referenced by other scenarios for comparison.
     p.scenario_label = 'ssp2_rcp45_luh2-globio_bau'
 
@@ -1283,7 +1290,7 @@ def set_attributes_to_dynamic_many_year_default(p):
     # be 'from_calibration' indicating that this run will actually create the calibration``
     # or it can be from a tile-designated file of location-specific regressor variables.
     p.calibration_parameters_source = 'seals/default_inputs/default_global_coefficients.csv'
-    
+
     # Some data, set to default inputs here, are required to make the model run becayse they determine which classes, which resolutions, ...
     p.key_base_year_lulc_simplified_path = os.path.join('lulc', p.lulc_src_label, p.lulc_simplification_label, 'lulc_' + p.lulc_src_label + '_' + p.lulc_simplification_label + '_' + str(p.key_base_year) + '.tif')
     p.key_base_year_lulc_src_path = os.path.join('lulc', p.lulc_src_label, 'lulc_' + p.lulc_src_label  + '_' + str(p.key_base_year) + '.tif')
@@ -1305,11 +1312,11 @@ def calc_observed_lulc_change_for_two_lulc_paths(lulc_1_path, lulc_2_path, coars
     # search algorithm not itself finding the from-to relationships just by minimizing difference? Basically, need to take seriously deallocation.
 
     full_change_matrix_no_diagonal_path = os.path.join(output_dir, 'full_change_matrix_no_diagonal.tif')
-    
-    from hazelbean.calculation_core.cython_functions import calc_change_matrix_of_two_int_arrays
+
+    from hazelbean.calculation_core.cython_functions import \
+        calc_change_matrix_of_two_int_arrays
+
     # if p.run_this and not os.path.exists(full_change_matrix_no_diagonal_path):
-
-
     # Clip all 30km change paths, then just use the last one to set the propoer (coarse) extent of the lulc.
     lulc_1 = hb.as_array(lulc_1_path)
     lulc_2 = hb.as_array(lulc_2_path)
@@ -1367,7 +1374,7 @@ def calc_observed_lulc_change_for_two_lulc_paths(lulc_1_path, lulc_2_path, coars
 
     full_change_matrix_path = os.path.join(output_dir, 'full_change_matrix.tif')
     hb.save_array_as_geotiff(full_change_matrix, full_change_matrix_path, coarse_ha_per_cell_path, n_rows=coarse_ha_per_cell.shape[0] * n_classes, n_cols=coarse_ha_per_cell.shape[1] * n_classes)
-    
+
     full_change_matrix_no_diagonal_path = os.path.join(output_dir, 'full_change_matrix_no_diagonal.tif')
     hb.save_array_as_geotiff(full_change_matrix_no_diagonal, full_change_matrix_no_diagonal_path, coarse_ha_per_cell_path, n_rows=coarse_ha_per_cell.shape[0] * n_classes, n_cols=coarse_ha_per_cell.shape[1] * n_classes)
 
@@ -1391,7 +1398,7 @@ def calc_observed_lulc_change_for_two_lulc_paths(lulc_1_path, lulc_2_path, coars
     # hb.save_array_as_geotiff(full_change_matrix_no_diagonal, full_change_matrix_no_diagonal_path, p.coarse_match.path, n_rows=full_change_matrix_no_diagonal.shape[1], n_cols=full_change_matrix_no_diagonal.shape[1])
 
 
-# p.ha_per_cell_15m = None    
+# p.ha_per_cell_15m = None
 
 def load_blocks_list(p, input_dir):
     possible_prefixes = [
@@ -1415,7 +1422,7 @@ def load_blocks_list(p, input_dir):
 
 
 def convert_regional_change_to_coarse(regional_change_vector_path, regional_change_classes_path, coarse_ha_per_cell_path, scenario_label, output_dir, output_filename_end, columns_to_process, region_ids_raster_path=None, distribution_algorithm='proportional', coarse_change_raster_path=None):
-    # Converts a regional vector change map to a coarse gridded representation. 
+    # Converts a regional vector change map to a coarse gridded representation.
     # - Regiona_change_vector_path is a gpkg with the boundaries of the regions that are changing.
     # - regional_change_classes_path is a csv with columns for each changing landuse class (in columns to process) that reports net change in hectares per polygon.
     # - Coarse_ha_per_cell_path is a raster that reports the number of hectares per cell in the coarse grid. Necessary to work with unprojected data, which is our assumed form.
@@ -1423,51 +1430,51 @@ def convert_regional_change_to_coarse(regional_change_vector_path, regional_chan
     # - Columns to process is a list of the columns headers in the gpkg that represent net changes in LU classes.
     # - distribution_algorithm is a string that indicates how to distribute the change across the cells. default is "proportional".
     # - Coarse_change_raster_path is an optional path that, if provided, will be combined with the regional change to produce a combined change raster.
-    
-    
-    # Read protection_by_aezreg_to_meet_30by30_path (this was generated based on ECN protected areas)                                 
+
+
+    # Read protection_by_aezreg_to_meet_30by30_path (this was generated based on ECN protected areas)
     regional_change_vector = gpd.read_file(regional_change_vector_path)
-    
+
     # Read the regional_change_classes to merge with the regional_change_vector
     regional_change_classes = pd.read_csv(regional_change_classes_path)
 
     # Make region_label uppercase
-    regional_change_classes['region_label'] = regional_change_classes['region_label'].str.upper() 
-    
+    regional_change_classes['region_label'] = regional_change_classes['region_label'].str.upper()
+
     # Merge regional_change_vector with regional_change_classes
     merged = pd.merge(regional_change_vector, regional_change_classes, left_on='ee_r264_label', right_on='region_label', how='inner')
-    
+
     if region_ids_raster_path is None:
         region_ids_raster_path = os.path.join(output_dir, 'region_ids.tif')
-                
+
     # Make the region_ids raster if it doesn't exist
     if not hb.path_exists(region_ids_raster_path):
-        
-        # TODOO NOTE that here we are not using all_touched. This is a fundamental problem with coarse reclassification. Lots of the polygon will be missed. Ideally, you use all_touched=False for 
+
+        # TODOO NOTE that here we are not using all_touched. This is a fundamental problem with coarse reclassification. Lots of the polygon will be missed. Ideally, you use all_touched=False for
         # country-country borders but all_touched=True for country-coastline boarders. Or join with EEZs?
         hb.rasterize_to_match(regional_change_vector_path, coarse_ha_per_cell_path, region_ids_raster_path, burn_column_name='ee_r264_id', burn_values=None, datatype=13, ndv=0, all_touched=False)
 
-    # Get the number of cells per zone. We need to know how big the zone is in terms of coarse cells so we can calculate how much of the total change happens in each coarse gridcell    
+    # Get the number of cells per zone. We need to know how big the zone is in terms of coarse cells so we can calculate how much of the total change happens in each coarse gridcell
     # TODOOO: Think about how I should deal with giving the whole regional_change_vector or if I should have it subset out the line it needs, cause this is a utility function.
     n_cells_per_zone = hb.enumerate_raster_path(region_ids_raster_path)
 
-    ## DEPRECATION previously had a multi-scenbario file. now simplified.    
+    ## DEPRECATION previously had a multi-scenbario file. now simplified.
     # # The function takes the path to the whole vector, but we only need the current row. This is selected via matching scenario_label
     # scenario_row = merged[merged['scenario_label'] == scenario_label]
     scenario_row = merged
-    
+
     # Build the allocation dictionary for each zone_id: to_allocate, which will be reclassified onto the zone ids.
     allocate_per_zone_dict = {}
     for column in columns_to_process:
         output_path = os.path.join(output_dir, column + output_filename_end)
-        
+
         if not hb.path_exists(output_path):
             hb.log('Processing ' + column + ' for ' + scenario_label + ',  writing to ' + output_path)
-        
+
             for i, change in merged[column].items():
                 zone_id = merged['ee_r264_id'][i]
                 n_cells = n_cells_per_zone[zone_id]
-                
+
                 if n_cells > 0  and change != 0:
                     result = change / n_cells
                 else:
@@ -1475,13 +1482,10 @@ def convert_regional_change_to_coarse(regional_change_vector_path, regional_chan
 
                 if 'nan' in str(result).lower():
                     allocate_per_zone_dict[zone_id] = 0.0
-                else: 
+                else:
                     allocate_per_zone_dict[zone_id] = result
-                    
+
             print(allocate_per_zone_dict)
-                
+
 
             hb.reclassify_raster_hb(region_ids_raster_path, allocate_per_zone_dict, output_path, output_data_type=7, array_threshold=10000, match_path=None, invoke_full_callback=False, verbose=False)
-                
-
-
