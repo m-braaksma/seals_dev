@@ -134,6 +134,54 @@ def lulc_clip(p):
 
 
 
+def lulc_clip_quick(p):
+    # Clip the fine LULC to the project AOI
+    
+    ## TODOO It is harder to implement task-level skipping when there is a base_data based file existence check
+    
+    if p.run_this:
+
+        # In the event that aoi is not global, we will store aoi_lulc and global_lulc paths. In the global version
+        # both of these dicts will be there, but they will be identical.
+        p.base_data_lulc_src_paths = {}
+        p.aoi_lulc_src_paths = {}
+        p.lulc_src_paths = {}  
+        
+        for index, row in p.scenarios_df.iterrows():
+            seals_utils.assign_df_row_to_object_attributes(p, row)
+
+            base_data_lulc_src_dir = os.path.join(p.base_data_dir, 'lulc', p.lulc_src_label)
+            src_filename_start = 'lulc_' + p.lulc_src_label + '_'
+
+            if p.scenario_type == 'baseline':
+                if p.aoi != 'global':
+                    for year in p.years:
+                        p.base_data_lulc_src_paths[year] = os.path.join(base_data_lulc_src_dir, src_filename_start + str(year) + '.tif')
+                        p.aoi_lulc_src_paths[year] = os.path.join(p.cur_dir, 'lulc', p.lulc_src_label, src_filename_start + str(year) + '.tif')
+                        p.lulc_src_paths[year] = p.aoi_lulc_src_paths[year] 
+                        
+
+                        if not hb.path_exists(p.aoi_lulc_src_paths[year]):
+                            hb.create_directories(p.aoi_lulc_src_paths[year])
+                            hb.clip_raster_by_bb(p.base_data_lulc_src_paths[year], p.bb, p.aoi_lulc_src_paths[year])
+                else:
+                    for year in p.years:
+                        # filename = 'binary_' + p.lulc_src_label + '_' + p.lulc_simplification_label + '_' + str(year) + '_class_' + str(class_label) + '.tif'
+                        # possible_dir = os.path.join('lulc', p.lulc_src_label, p.lulc_simplification_label, 'binaries', str(year))
+                        # output_path = hb.get_first_extant_path(search_path, [p.fine_processed_inputs_dir, p.input_dir, p.base_data_dir])
+                            
+                        search_path = os.path.join('lulc', p.lulc_src_label, src_filename_start + str(year) + '.tif')
+                        # p.base_data_lulc_src_paths[year] = hb.get_first_extant_path(search_path, [p.fine_processed_inputs_dir, p.input_dir, p.base_data_dir])
+                        p.base_data_lulc_src_paths[year] = p.get_path(search_path)
+                        p.aoi_lulc_src_paths[year] = p.base_data_lulc_src_paths[year] 
+                        p.lulc_src_paths[year] = p.base_data_lulc_src_paths[year] 
+
+                        if not hb.path_exists(p.aoi_lulc_src_paths[year]):
+                            hb.create_directories(p.aoi_lulc_src_paths[year])
+                            hb.clip_raster_by_bb(p.base_data_lulc_src_paths[year], p.bb, p.aoi_lulc_src_paths[year])
+
+
+
 def lulc_simplifications(p):
     # Simplify the LULC
     
