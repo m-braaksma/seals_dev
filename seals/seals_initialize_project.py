@@ -18,6 +18,7 @@ import seals_visualization_tasks
 import config
 from seals_utils import download_google_cloud_blob
 import seals_tasks
+import ecosystem_services
 
 
 def set_advanced_options(p):       
@@ -207,8 +208,51 @@ def build_standard_task_tree(p):
     p.visualization_task = p.add_task(seals_visualization_tasks.visualization)
     p.lulc_pngs_task = p.add_task(seals_visualization_tasks.lulc_pngs, parent=p.visualization_task)
     
- 
- 
+def build_ken_task_tree(p):
+    """
+    Key Modifications:
+    REMOVED 1) Use alternative basemap for coarse change calculations (coarse_simplified_ha_difference_from_previous_year_with_alt_basemap)
+    2) Add tasks to generate pollination shock
+    """
+
+    # Define the project AOI
+    p.project_aoi_task = p.add_task(seals_tasks.project_aoi)
+
+    ##### FINE PROCESSED INPUTS #####    
+    p.fine_processed_inputs_task = p.add_task(seals_generate_base_data.fine_processed_inputs)
+    p.generated_kernels_task = p.add_task(seals_generate_base_data.generated_kernels, parent=p.fine_processed_inputs_task, creates_dir=False)
+    p.lulc_clip_task = p.add_task(seals_generate_base_data.lulc_clip, parent=p.fine_processed_inputs_task, creates_dir=False)
+    p.lulc_simplifications_task = p.add_task(seals_generate_base_data.lulc_simplifications, parent=p.fine_processed_inputs_task, creates_dir=False)
+    p.lulc_binaries_task = p.add_task(seals_generate_base_data.lulc_binaries, parent=p.fine_processed_inputs_task, creates_dir=False)
+    p.lulc_convolutions_task = p.add_task(seals_generate_base_data.lulc_convolutions, parent=p.fine_processed_inputs_task, creates_dir=False)
+
+    ##### COARSE CHANGE #####
+    p.coarse_change_task = p.add_task(seals_process_coarse_timeseries.coarse_change, skip_existing=0)
+    p.extraction_task = p.add_task(seals_process_coarse_timeseries.coarse_extraction, parent=p.coarse_change_task, run=1, skip_existing=0)
+    p.coarse_simplified_task = p.add_task(seals_process_coarse_timeseries.coarse_simplified_proportion, parent=p.coarse_change_task, skip_existing=0)
+    p.coarse_simplified_ha_task = p.add_task(seals_process_coarse_timeseries.coarse_simplified_ha, parent=p.coarse_change_task, skip_existing=0)
+    p.coarse_simplified_ha_difference_from_previous_year_task = p.add_task(seals_process_coarse_timeseries.coarse_simplified_ha_difference_from_previous_year, parent=p.coarse_change_task, skip_existing=0)
+
+    ##### REGIONAL 
+    p.regional_change_task = p.add_task(seals_process_coarse_timeseries.regional_change)     
+
+    ##### ALLOCATION #####
+    p.allocations_task = p.add_iterator(seals_main.allocations)
+    p.allocation_zones_task = p.add_iterator(seals_main.allocation_zones, run_in_parallel=p.run_in_parallel, parent=p.allocations_task)
+    p.allocation_task = p.add_task(seals_main.allocation, parent=p.allocation_zones_task, skip_existing=1)
+
+    ##### STITCH ZONES #####
+    p.stitched_lulc_simplified_scenarios_task = p.add_task(seals_main.stitched_lulc_simplified_scenarios)
+
+    ##### VISUALIZE EXISTING DATA #####
+    p.visualization_task = p.add_task(seals_visualization_tasks.visualization)
+    p.lulc_pngs_task = p.add_task(seals_visualization_tasks.lulc_pngs, parent=p.visualization_task)
+    
+    ##### GENERATE POLLINATION SHOCK #####
+    p.pollination_sufficiency = p.add_task(ecosystem_services.pollination_sufficiency)
+    p.pollination_shock = p.add_task(ecosystem_services.calculate_crop_value_and_shock)
+
+
 def build_custom_coarse_algorithm_task_tree(p):
 
     # Define the project AOI

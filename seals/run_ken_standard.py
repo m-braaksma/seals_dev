@@ -3,7 +3,6 @@ import seals_utils
 import seals_initialize_project
 import hazelbean as hb
 import pandas as pd
-import time
 
 main = ''
 if __name__ == '__main__':
@@ -12,7 +11,6 @@ if __name__ == '__main__':
     # Users should only need to edit lines in this section
     
     # Create a ProjectFlow Object to organize directories and enable parallel processing.
-    start_time = time.perf_counter()
     p = hb.ProjectFlow()
 
     # Assign project-level attributes to the p object (such as in p.base_data_dir = ... below)
@@ -21,8 +19,8 @@ if __name__ == '__main__':
     # files that already exist. 
     p.user_dir = os.path.expanduser('~')        
     p.extra_dirs = ['Files', 'seals', 'projects']
-    p.project_name = 'test_standard'
-    p.project_name = p.project_name + '_' + hb.pretty_time() # If don't you want to recreate everything each time, comment out this line.
+    p.project_name = 'run_ken_standard'
+    # p.project_name = p.project_name + '_' + hb.pretty_time() # If don't you want to recreate everything each time, comment out this line.
     
     # Based on the paths above, set the project_dir. All files will be created in this directory.
     p.project_dir = os.path.join(p.user_dir, os.sep.join(p.extra_dirs), p.project_name)
@@ -69,9 +67,3 @@ if __name__ == '__main__':
     p.execute()
 
     result = 'Done!'
-
-    end_time = time.perf_counter()
-    execution_time = end_time - start_time
-    print(f"Execution time: {execution_time} seconds")
-
-

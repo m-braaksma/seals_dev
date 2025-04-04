@@ -46,7 +46,16 @@ except ImportError:
 L = hb.get_logger()
 
 
-env_name = sys.executable.split(os.sep)[-2]
+# env_name = sys.executable.split(os.sep)[-3]
+# Get Conda environment path
+exe_path = sys.executable
+path_parts = exe_path.split(os.sep)
+try:
+    env_index = path_parts.index("envs") + 1  # The env name comes after 'envs'
+    env_name = path_parts[env_index]  # Extract the environment name
+except ValueError:
+    raise Exception(f"Could not determine Conda environment path from sys.executable: {exe_path}")
+
 
 import seals_utils
 if env_name is not None:
@@ -55,20 +64,20 @@ if env_name is not None:
     except:
         raise NameError('Failed to compile cython. Most likely this is because you have not set the p.conda_env_name above to the name of your a properly configured environment with Cython installed. The other reason it might fail is if you do not have a C compiler installed.  To fix this, search for ')
 
-try:
-    from seals_cython_functions import calibrate as calibrate
-except:
-    raise NameError('Failed to import a cython-enabled library. Most likely this is because you have not set the p.conda_env_name above to the name of your a properly configured environment with Cython installed. The other reason it might fail is if you do not have a C compiler installed.  To fix this, search for ')
+# try:
+#     from seals_cython_functions import calibrate as calibrate
+# except:
+#     raise NameError('Failed to import a cython-enabled library. Most likely this is because you have not set the p.conda_env_name above to the name of your a properly configured environment with Cython installed. The other reason it might fail is if you do not have a C compiler installed.  To fix this, search for ')
 
 try:
     import seals_cython_functions as seals_cython_functions
 except:
     raise NameError('Failed to import a cython-enabled library. Most likely this is because you have not set the p.conda_env_name above to the name of your a properly configured environment with Cython installed. The other reason it might fail is if you do not have a C compiler installed.  To fix this, search for ')
 
-try:
-    from seals_cython_functions import calibrate_from_change_matrix
-except:
-    raise NameError('Failed to import a cython-enabled library. Most likely this is because you have not set the p.conda_env_name above to the name of your a properly configured environment with Cython installed. The other reason it might fail is if you do not have a C compiler installed.  To fix this, search for ')
+# try:
+#     from seals_cython_functions import calibrate_from_change_matrix
+# except:
+#     raise NameError('Failed to import a cython-enabled library. Most likely this is because you have not set the p.conda_env_name above to the name of your a properly configured environment with Cython installed. The other reason it might fail is if you do not have a C compiler installed.  To fix this, search for ')
 
 
 def initialize_tasks(p):
@@ -1907,8 +1916,11 @@ def allocation(passed_p=None):
         if p.previous_year in p.lulc_simplified_paths: # Then it is the base year
             
             # On the first year, we need to clip from the AOI-wide LULC to the current processing tile.
-            aoi_previous_year_path = p.lulc_simplified_paths[p.previous_year]
-            
+            if hasattr(p, 'alt_base_lulc_path'):
+                aoi_previous_year_path = p.alt_base_lulc_path
+            else:
+                aoi_previous_year_path = p.lulc_simplified_paths[p.previous_year]
+     
             # HACK IUCN. This can only be dealt with by fixing/eliminating the lulc_simplified_paths[] dicts
             if 'restoration' in p.scenario_label:
                 clipped_path = os.path.join(p.cur_dir, 'base_lulc.tif')
