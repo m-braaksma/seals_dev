@@ -14,6 +14,7 @@ from hazelbean import utils
 from hazelbean import pyramids
 from osgeo import gdal
 import netCDF4 as nc
+from scipy.interpolate import interp1d
 
 import seals_utils
 
@@ -794,3 +795,149 @@ def coarse_simplified_ha_difference_from_previous_year(p):
 
                         previous_year = year
                     
+
+# def coarse_simplified_ha_difference_from_previous_year_ALT(p):
+#     # Calculate LUH2_simplified difference with an alternative basemap for the first year after base year
+#     task_documentation = """Calculates LUH2_simplified difference using a new basemap for the first year after the base year, then follows the standard process."""
+    
+#     if p.run_this:      
+#         for index, row in p.scenarios_df.iterrows():
+#             seals_utils.assign_df_row_to_object_attributes(p, row)
+#             hb.log('Processing scenario ' + str(index) + ' of ' + str(len(p.scenarios_df)) + ' with row ' + str([i for i in row]))
+
+#             # Load land-use correspondence dictionary
+#             if hb.path_exists(os.path.join(p.input_dir, p.coarse_correspondence_path)):
+#                 p.lulc_correspondence_dict = hb.utils.get_reclassification_dict_from_df(
+#                     os.path.join(p.input_dir, p.coarse_correspondence_path), 
+#                     'src_id', 'dst_id', 'src_label', 'dst_label'
+#                 )
+#             elif hb.path_exists(os.path.join(p.base_data_dir, p.coarse_correspondence_path)):
+#                 p.lulc_correspondence_dict = hb.utils.get_reclassification_dict_from_df(
+#                     os.path.join(p.base_data_dir, p.coarse_correspondence_path), 
+#                     'src_id', 'dst_id', 'src_label', 'dst_label'
+#                 )
+#             else:
+#                 raise NameError('Unable to find ' + p.coarse_correspondence_path)
+
+#             cell_size = hb.get_cell_size_from_path(p.ha_per_cell_coarse_path)
+#             ha_per_cell_array = hb.as_array(p.aoi_ha_per_cell_coarse_path)
+
+#             if p.scenario_type != 'baseline':
+#                 for c, i in enumerate(p.lulc_correspondence_dict['dst_ids']):
+#                     dst_class_label = p.lulc_correspondence_dict['dst_labels'][c]
+
+#                     baseline_reference_label = row['baseline_reference_label']
+#                     baseline_reference_row = p.scenarios_df.loc[p.scenarios_df['scenario_label'] == baseline_reference_label]
+#                     baseline_exogenous_label = baseline_reference_row['exogenous_label'].values[0]
+#                     baseline_reference_model = baseline_reference_row['model_label'].values[0]
+
+#                     current_starting_year = None
+#                     previous_year = None
+
+#                     for year in p.years:
+#                         if current_starting_year is None:
+#                             base_year = int(row['key_base_year'])
+#                             current_starting_year = base_year
+#                             current_starting_year_dir = os.path.join(
+#                                 p.coarse_simplified_proportion_dir, 
+#                                 baseline_exogenous_label, 
+#                                 baseline_reference_model, 
+#                                 str(current_starting_year)
+#                             )
+#                             current_starting_year_path = os.path.join(
+#                                 current_starting_year_dir, 
+#                                 f"{dst_class_label}_prop_{baseline_exogenous_label}_{baseline_reference_model}_{current_starting_year}.tif"
+#                             )
+#                         else:
+#                             current_starting_year = previous_year
+#                             current_starting_year_dir = os.path.join(
+#                                 p.coarse_simplified_proportion_dir, 
+#                                 p.exogenous_label, 
+#                                 p.climate_label, 
+#                                 p.model_label, 
+#                                 p.counterfactual_label, 
+#                                 str(current_starting_year)
+#                             )
+#                             current_starting_year_path = os.path.join(
+#                                 current_starting_year_dir, 
+#                                 f"{dst_class_label}_prop_{p.exogenous_label}_{p.climate_label}_{p.model_label}_{p.counterfactual_label}_{current_starting_year}.tif"
+#                             )
+
+#                         current_ending_year_src_dir = os.path.join(
+#                             p.coarse_simplified_proportion_dir, 
+#                             p.exogenous_label, 
+#                             p.climate_label, 
+#                             p.model_label, 
+#                             p.counterfactual_label, 
+#                             str(year)
+#                         )
+#                         current_ending_year_src_path = os.path.join(
+#                             current_ending_year_src_dir, 
+#                             f"{dst_class_label}_prop_{p.exogenous_label}_{p.climate_label}_{p.model_label}_{p.counterfactual_label}_{year}.tif"
+#                         )
+
+#                         current_ending_year_dst_dir = os.path.join(
+#                             p.cur_dir, 
+#                             p.exogenous_label, 
+#                             p.climate_label, 
+#                             p.model_label, 
+#                             p.counterfactual_label, 
+#                             str(year)
+#                         )
+#                         hb.create_directories(current_ending_year_dst_dir)
+
+#                         current_ending_year_dst_path = os.path.join(
+#                             current_ending_year_dst_dir, 
+#                             f"{dst_class_label}_{year}_{current_starting_year}_ha_diff_{p.exogenous_label}_{p.climate_label}_{p.model_label}_{p.counterfactual_label}.tif"
+#                         )
+
+#                         if not hb.path_exists(current_ending_year_dst_path):
+#                             # Load ending year raster
+#                             ending_year_array = hb.load_geotiff_chunk_by_bb(current_ending_year_src_path, p.bb)
+#                             ending_year_ndv = hb.get_ndv_from_path(current_ending_year_src_path)
+
+#                             # Use new basemap ONLY for the first year after the base year
+#                             if hasattr(p, 'alt_base_lulc_path') and (year == base_year + 1):
+#                                 if not hb.path_exists(p.alt_base_lulc_path):
+#                                     raise NameError(f"New basemap file not found: {p.alt_base_lulc_path}")
+#                                 hb.log(f"Using new basemap for year {year-1}")
+#                                 # Uses bb for ESA, which results in mismatch
+#                                 # Load entire alt basemap for now
+#                                 # starting_year_array = hb.load_geotiff_chunk_by_bb(p.alt_base_lulc_path, p.bb)
+#                                 alt_bb = hb.spatial_projection.get_bounding_box(p.alt_base_lulc_path)
+#                                 starting_year_array = hb.load_geotiff_chunk_by_bb(p.alt_base_lulc_path, alt_bb)
+#                                 starting_year_ndv = hb.get_ndv_from_path(p.alt_base_lulc_path)
+
+#                                 # Mask alt basemap to the current class
+#                                 if i not in np.unique(starting_year_array):
+#                                     raise NameError(f"Class {i} not found in alt basemap")
+#                                 starting_year_array = np.where(starting_year_array == i, 1, 0)
+#                                 # NOTE: ending_year_array is in proportion (0-1), stating_year_array is binary from categorical (0/1)
+
+#                                 # Ensure resolution consistency
+#                                 if ending_year_array.shape != starting_year_array.shape:
+#                                     hb.log(f"Shape mismatch: {ending_year_array.shape} != {starting_year_array.shape}.")
+#                                     hb.log(f"Interpolating basemap array to match coarse resolution using 'nearest' method.")
+#                                     def nearest_neighbor_resample(array, new_shape):
+#                                         old_shape = array.shape
+#                                         row_indices = np.linspace(0, old_shape[0] - 1, new_shape[0]).astype(int)
+#                                         col_indices = np.linspace(0, old_shape[1] - 1, new_shape[1]).astype(int)
+#                                         return array[np.ix_(row_indices, col_indices)]
+#                                     starting_year_array = nearest_neighbor_resample(starting_year_array, ending_year_array.shape)
+#                                     assert ending_year_array.shape == starting_year_array.shape
+
+#                             else: # Use the standard basemap
+#                                 starting_year_array = hb.load_geotiff_chunk_by_bb(current_starting_year_path, p.bb)
+#                                 starting_year_ndv = hb.get_ndv_from_path(current_starting_year_path)
+
+#                             # Handle NoData values
+#                             ending_year_array = np.where(ending_year_array == ending_year_ndv, 0, ending_year_array)
+#                             starting_year_array = np.where(starting_year_array == starting_year_ndv, 0, starting_year_array)
+
+#                             # Compute land-use change difference
+#                             current_array = (ending_year_array - starting_year_array) * ha_per_cell_array
+
+#                             # Save output raster
+#                             hb.save_array_as_geotiff(current_array, current_ending_year_dst_path, p.aoi_ha_per_cell_coarse_path)
+
+#                         previous_year = year
