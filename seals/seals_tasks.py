@@ -25,10 +25,12 @@ def project_aoi(p):
                 p.aoi_label = p.aoi
                 filter_column = 'ee_r264_label' # if it's exactly 3 characters, assume it's an ISO3 code.
                 filter_value = p.aoi.upper()
-            elif ':' in p.aoi: # Then it's an explicit filter for the regions_vector.
-                p.aoi_path = os.path.join(p.cur_dir, 'aoi_' + str(p.aoi).replace(':', '_') + '.gpkg')
-                p.aoi_label = p.aoi
-                filter_column, filter_value = p.aoi.split(':')
+                
+            ### HACK: This was a temporary fix that now messes up ref_paths that have been filled out. IO'm not sure if I even want to support this type of filter anymore. Check with the seals_api work I abandoned.
+            # elif ':' in p.aoi: # Then it's an explicit filter for the regions_vector.
+            #     p.aoi_path = os.path.join(p.cur_dir, 'aoi_' + str(p.aoi).replace(':', '_') + '.gpkg')
+            #     p.aoi_label = p.aoi
+            #     filter_column, filter_value = p.aoi.split(':')
             else: # Then it's a path to a shapefile.
                 p.aoi_path = p.aoi
                 p.aoi_label = os.path.splitext(os.path.basename(p.aoi))[0]

@@ -23,7 +23,7 @@ if __name__ == '__main__':
     # The project_name is used to name the project directory below. If the directory exists, each task will not recreate
     # files that already exist. 
     p.user_dir = os.path.expanduser('~')        
-    p.extra_dirs = ['Files', 'seals', 'projects']
+    p.extra_dirs = ['Files', 'seals', 'projects', 'tests']
     p.project_name = 'test_standard_fast'
     # p.project_name = p.project_name + '_' + hb.pretty_time() # If don't you want to recreate everything each time, comment out this line.
     
@@ -53,7 +53,7 @@ if __name__ == '__main__':
     # If you have not run SEALS before, SEALS will generate it in your project's input_dir.
     # A useful way to get started is to to run SEALS on the test data without modification
     # and then edit the scenario_definitions.csv to your project needs.   
-    p.scenario_definitions_filename = 'test_standard_scenarios.csv' 
+    p.scenario_definitions_filename = 'standard_scenarios.csv' 
     p.scenario_definitions_path = os.path.join(p.input_dir, p.scenario_definitions_filename)
     seals_initialize_project.initialize_scenario_definitions(p)
         
