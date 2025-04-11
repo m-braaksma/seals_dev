@@ -35,6 +35,7 @@ from seals import seals_utils
 import pandas as pd
 import time
 import math
+from hazelbean import config as hb_config
 
 try:
     from setuptools import setup
@@ -43,7 +44,7 @@ except ImportError:
     from distutils.core import setup
     from distutils.extension import Extension
 
-L = hb.get_logger()
+L = hb_config.get_logger()
 
 
 env_name = sys.executable.split(os.sep)[-2]

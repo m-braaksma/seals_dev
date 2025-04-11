@@ -5,11 +5,11 @@ import pandas as pd
 import multiprocessing
 from matplotlib import pyplot as plt
 import geopandas as gpd
-
+from hazelbean import config as hb_config
 
 from seals import seals_utils
 
-L = hb.get_logger()
+L = hb_config.get_logger()
 
 def aligned_habitat_raster(p):
     

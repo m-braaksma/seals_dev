@@ -5,7 +5,8 @@ import scipy
 import scipy.stats as st
 import scipy.ndimage
 import hazelbean as hb
-from hazelbean import config
+from hazelbean import config as hb_config
+from hazelbean import globals as hb_globals
 import pandas as pd
 import geopandas as gpd
 # from hazelbean.ui import model, inputs
@@ -23,7 +24,7 @@ logging.basicConfig(level=logging.WARNING)
 # hb.ui.model.LOGGER.setLevel(logging.WARNING)
 # hb.ui.inputs.LOGGER.setLevel(logging.WARNING)
 
-L = hb.get_logger('seals_utils')
+L = hb_config.get_logger('seals_utils')
 L.setLevel(logging.INFO)
 
 
@@ -401,7 +402,7 @@ def regular_sigmoidal_first_order(x,
     return scalar * sigmoidal_curve(x, left_value, inflection_point, steepness, magnitude)
 
 
-def sigmoidal_curve(x, left_value, inflection_point, steepness, magnitude, e=hb.globals.e):
+def sigmoidal_curve(x, left_value, inflection_point, steepness, magnitude, e=hb_globals.e):
     return left_value / ((1. / magnitude) + e ** (steepness * (x - inflection_point)))
 
 
