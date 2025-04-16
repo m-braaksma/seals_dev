@@ -3,12 +3,6 @@ from distutils.extension import Extension
 from Cython.Distutils import build_ext
 import numpy
 
-
-
-# ext_modules = [Extension('gtap_invest',
-#                          ['seals_cython_functions.pyx'],
-#                          )]
-
 ext_modules = [Extension('seals_cython_functions',
                          ['seals_cython_functions.pyx'],
                          )]

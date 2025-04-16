@@ -1,7 +1,14 @@
-import logging
-import math
-import os
-import sys
+import logging, os, math, sys
+from osgeo import gdal
+import numpy as np
+import scipy
+import scipy.stats as st
+import scipy.ndimage
+import hazelbean as hb
+from hazelbean import config as hb_config
+from hazelbean import globals as hb_globals
+import pandas as pd
+import geopandas as gpd
 # from hazelbean.ui import model, inputs
 from collections import OrderedDict
 
@@ -27,8 +34,9 @@ logging.basicConfig(level=logging.WARNING)
 # hb.ui.model.LOGGER.setLevel(logging.WARNING)
 # hb.ui.inputs.LOGGER.setLevel(logging.WARNING)
 
-L = hb.get_logger('seals_utils')
+L = hb_config.get_logger('seals_utils')
 L.setLevel(logging.INFO)
+
 
 logging.getLogger('Fiona').setLevel(logging.WARNING)
 logging.getLogger('fiona.collection').setLevel(logging.WARNING)
@@ -405,7 +413,7 @@ def regular_sigmoidal_first_order(x,
     return scalar * sigmoidal_curve(x, left_value, inflection_point, steepness, magnitude)
 
 
-def sigmoidal_curve(x, left_value, inflection_point, steepness, magnitude, e=hb.globals.e):
+def sigmoidal_curve(x, left_value, inflection_point, steepness, magnitude, e=hb_globals.e):
     return left_value / ((1. / magnitude) + e ** (steepness * (x - inflection_point)))
 
 
@@ -502,8 +510,7 @@ def carbon(lulc_path, carbon_zones_path, carbon_table_path, output_path):
     # import gtap_invest
     # import gtap_invest.global_invest
     # import gtap_invest.global_invest.carbon_biophysical
-    from . import seals_cython_functions as seals_cython_functions
-
+    from seals import seals_cython_functions as seals_cython_functions
     # from seals_cython_functions import write_carbon_table_to_array
     base_raster_path_band = [(lulc_path, 1), (carbon_zones_path, 1), (lookup_table, 'raw'), (row_names, 'raw'), (col_names, 'raw')]
     hb.raster_calculator_hb(base_raster_path_band, seals_cython_functions.write_carbon_table_to_array, output_path, 6, -9999, hb.DEFAULT_GTIFF_CREATION_TUPLE_OPTIONS_HB)
@@ -565,8 +572,6 @@ def calculate_carbon_naively(luh_ag_expansion_ha_path,
 
 
     return carbon_per_cell_after_loss, carbon_per_ha_upscaled, carbon_per_cell_fine
-
-
 
 
 def assign_defaults_from_model_spec(input_object, model_spec_dict):
@@ -658,8 +663,8 @@ def set_derived_attributes(p):
     # Resolutions come from the fine and coarse maps
     p.fine_resolution = hb.get_cell_size_from_path(p.base_year_lulc_path)
     p.fine_resolution_arcseconds = hb.pyramid_compatible_resolution_to_arcseconds[p.fine_resolution]
-
-    if hb.is_path_gdal_readable(p.coarse_projections_input_path):
+    
+    if hb.path_exists(p.coarse_projections_input_path):
         p.coarse_resolution = hb.get_cell_size_from_path(p.coarse_projections_input_path)
         p.coarse_resolution_arcseconds = hb.pyramid_compatible_resolution_to_arcseconds[p.coarse_resolution]
     else:
@@ -1421,71 +1426,102 @@ def load_blocks_list(p, input_dir):
 
 
 
-def convert_regional_change_to_coarse(regional_change_vector_path, regional_change_classes_path, coarse_ha_per_cell_path, scenario_label, output_dir, output_filename_end, columns_to_process, region_ids_raster_path=None, distribution_algorithm='proportional', coarse_change_raster_path=None):
-    # Converts a regional vector change map to a coarse gridded representation.
+def convert_regional_change_to_coarse(regional_change_vector_path, regional_change_classes_path, coarse_ha_per_cell_path, scenario_label, output_dir, output_filename_end, columns_to_process, regions_column_label, years, region_ids_raster_path=None,  distribution_algorithm='proportional', coarse_change_raster_path=None):
+    # Converts a regional vector change map to a coarse gridded representation. 
     # - Regiona_change_vector_path is a gpkg with the boundaries of the regions that are changing.
     # - regional_change_classes_path is a csv with columns for each changing landuse class (in columns to process) that reports net change in hectares per polygon.
     # - Coarse_ha_per_cell_path is a raster that reports the number of hectares per cell in the coarse grid. Necessary to work with unprojected data, which is our assumed form.
     # - Output path is the path to save the output raster.
     # - Columns to process is a list of the columns headers in the gpkg that represent net changes in LU classes.
     # - distribution_algorithm is a string that indicates how to distribute the change across the cells. default is "proportional".
-    # - Coarse_change_raster_path is an optional path that, if provided, will be combined with the regional change to produce a combined change raster.
-
-
-    # Read protection_by_aezreg_to_meet_30by30_path (this was generated based on ECN protected areas)
-    regional_change_vector = gpd.read_file(regional_change_vector_path)
-
-    # Read the regional_change_classes to merge with the regional_change_vector
+    # - Coarse_change_raster_path is an optional path that, if provided, will be combined with the regional change to produce a combined change raster.  
+    
+    # Read both inputs                          
+    regional_change_vector = gpd.read_file(regional_change_vector_path)    
     regional_change_classes = pd.read_csv(regional_change_classes_path)
+   
+    # Merge them, but note awkwardness that there are two different merge types, on label and on id. 
+    # BOTH are required because in gtappy we are concatenating AEZ and reg_id
+    if str(regions_column_label).endswith('_label'):
+        regional_change_vector[regions_column_label] = regional_change_vector[regions_column_label].astype(str).str.upper()
+        regional_change_vector['region_label'] = regional_change_vector[regions_column_label]        
+        regional_change_classes[regions_column_label] = regional_change_classes[regions_column_label].astype(str).str.upper()
+        regional_change_classes['region_label'] = regional_change_classes[regions_column_label]        
+        merged = hb.df_merge_quick(regional_change_vector, regional_change_classes, left_on='region_label', right_on='region_label', how='inner')
+    elif str(regions_column_label).endswith('_id'):
+        regional_change_vector[regions_column_label] = regional_change_vector[regions_column_label].astype(int)
+        regional_change_vector['region_label'] = regional_change_vector[regions_column_label]
+        regional_change_classes[regions_column_label] = regional_change_classes[regions_column_label].astype(int)
+        regional_change_classes['region_label'] = regional_change_classes[regions_column_label]        
+        merged = hb.df_merge_quick(regional_change_vector, regional_change_classes, left_on='region_label', right_on='region_label', how='inner')   
+    else:
+        raise NameError('Regions column label must end with _label or _id')
 
-    # Make region_label uppercase
-    regional_change_classes['region_label'] = regional_change_classes['region_label'].str.upper()
-
-    # Merge regional_change_vector with regional_change_classes
-    merged = pd.merge(regional_change_vector, regional_change_classes, left_on='ee_r264_label', right_on='region_label', how='inner')
-
+    
     if region_ids_raster_path is None:
         region_ids_raster_path = os.path.join(output_dir, 'region_ids.tif')
-
+    
+    
+    ### Rasterize the regions vector to a raster.
+    
+    # This is the one case where it's okay to infer a name. labels to ids always exist together
+    regions_column_id = regions_column_label.replace('label', 'id')
     # Make the region_ids raster if it doesn't exist
     if not hb.path_exists(region_ids_raster_path):
 
         # TODOO NOTE that here we are not using all_touched. This is a fundamental problem with coarse reclassification. Lots of the polygon will be missed. Ideally, you use all_touched=False for
         # country-country borders but all_touched=True for country-coastline boarders. Or join with EEZs?
-        hb.rasterize_to_match(regional_change_vector_path, coarse_ha_per_cell_path, region_ids_raster_path, burn_column_name='ee_r264_id', burn_values=None, datatype=13, ndv=0, all_touched=False)
+        hb.rasterize_to_match(regional_change_vector_path, coarse_ha_per_cell_path, region_ids_raster_path, burn_column_name=regions_column_id, burn_values=None, datatype=13, ndv=0, all_touched=False)
 
-    # Get the number of cells per zone. We need to know how big the zone is in terms of coarse cells so we can calculate how much of the total change happens in each coarse gridcell
+    ### Get the number of cells per zone. 
+    
+    # We need to know how big the zone is in terms of coarse cells so we can calculate how much of the total change happens in each coarse gridcell    
     # TODOOO: Think about how I should deal with giving the whole regional_change_vector or if I should have it subset out the line it needs, cause this is a utility function.
     n_cells_per_zone = hb.enumerate_raster_path(region_ids_raster_path)
 
-    ## DEPRECATION previously had a multi-scenbario file. now simplified.
-    # # The function takes the path to the whole vector, but we only need the current row. This is selected via matching scenario_label
-    # scenario_row = merged[merged['scenario_label'] == scenario_label]
-    scenario_row = merged
+    ### Define the allocation of the total to individual cells
+    
+    # Creates a dict for each zone_id: to_allocate, which will be reclassified onto the zone ids.
+    for year_c, year in enumerate(years):
+        allocate_per_zone_dict = {}
+        for column in columns_to_process:
+            output_path = os.path.join(output_dir, column + output_filename_end)
+            
+            if not hb.path_exists(output_path):
+                hb.log('Processing ' + column + ' for ' + scenario_label + ',  writing to ' + output_path)
+                regions_column_id = regions_column_id.replace('label', 'id')
+                
 
-    # Build the allocation dictionary for each zone_id: to_allocate, which will be reclassified onto the zone ids.
-    allocate_per_zone_dict = {}
-    for column in columns_to_process:
-        output_path = os.path.join(output_dir, column + output_filename_end)
+                for i, change in merged[column].items():
+                    zone_id = int(merged[regions_column_id][i])
+                    
+                    if int(zone_id) in n_cells_per_zone:
+                        n_cells = n_cells_per_zone[int(zone_id)] # BAD HACK, should be generalized to know ahead of time if it's an int or string
+                    else:
+                        n_cells = 0
+                        
+                    if n_cells > 0  and change != 0:
+                        result = change / n_cells
+                    else:
+                        result = 0.0
 
-        if not hb.path_exists(output_path):
-            hb.log('Processing ' + column + ' for ' + scenario_label + ',  writing to ' + output_path)
+                    if 'nan' in str(result).lower():
+                        allocate_per_zone_dict[zone_id] = 0.0
+                    else: 
+                        allocate_per_zone_dict[zone_id] = result
+                            
 
-            for i, change in merged[column].items():
-                zone_id = merged['ee_r264_id'][i]
-                n_cells = n_cells_per_zone[zone_id]
-
-                if n_cells > 0  and change != 0:
-                    result = change / n_cells
-                else:
-                    result = 0.0
-
-                if 'nan' in str(result).lower():
-                    allocate_per_zone_dict[zone_id] = 0.0
-                else:
-                    allocate_per_zone_dict[zone_id] = result
-
-            print(allocate_per_zone_dict)
+                hb.reclassify_raster_hb(region_ids_raster_path, allocate_per_zone_dict, output_path, output_data_type=7, array_threshold=10000, match_path=None, invoke_full_callback=False, verbose=False)
+                    
+def combine_coarsified_regional_with_coarse_estimate(coarsified_path, coarse_estimate_path, combination_algorithm, output_path):
+    ### ABANDONED?
+    if combination_algorithm == 'local_sum':
+        def local_sum(a, b):
+            return a + b    
+        hb.raster_calculator_flex([coarsified_path, coarse_estimate_path], local_sum, output_path)
+    elif combination_algorithm == 'covariate_regavg_shift':
+        def covariate_regavg_shift(a, b):
+            return a + b
+        hb.raster_calculator_flex([coarsified_path, coarse_estimate_path], covariate_regavg_shift, output_path)
 
 
-            hb.reclassify_raster_hb(region_ids_raster_path, allocate_per_zone_dict, output_path, output_data_type=7, array_threshold=10000, match_path=None, invoke_full_callback=False, verbose=False)

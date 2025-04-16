@@ -1,6 +1,4 @@
-"""Identical to run_test_standard.py, but does not make a new directory each time. This it is very fast if you've
-run it at least one before."""
-
+"UNFINISHED! Pull in the iucn test example but figure out where it all goes."
 
 
 import os
@@ -14,10 +12,9 @@ from . import seals_utils
 
 main = ''
 if __name__ == '__main__':
-
-    ### ------- ENVIRONMENT SETTINGS -------------------------------
-    # Users should only need to edit lines in this section
-
+    
+    ### START HERE Fails because of zonal statistics on the custom task.
+    
     # Create a ProjectFlow Object to organize directories and enable parallel processing.
     p = hb.ProjectFlow()
 
@@ -27,8 +24,8 @@ if __name__ == '__main__':
     # files that already exist.
     p.user_dir = os.path.expanduser('~')
     p.extra_dirs = ['Files', 'seals', 'projects']
-    p.project_name = 'test_standard_fast'
-    # p.project_name = p.project_name + '_' + hb.pretty_time() # If don't you want to recreate everything each time, comment out this line.
+    p.project_name = 'custom_coarse_algorithm'
+    p.project_name = p.project_name + '_' + hb.pretty_time() # If don't you want to recreate everything each time, comment out this line.
 
     # Based on the paths above, set the project_dir. All files will be created in this directory.
     p.project_dir = os.path.join(p.user_dir, os.sep.join(p.extra_dirs), p.project_name)
@@ -37,7 +34,7 @@ if __name__ == '__main__':
     p.run_in_parallel = 1 # Must be set before building the task tree if the task tree has parralel iterator tasks.
 
     # Build the task tree via a building function and assign it to p. IF YOU WANT TO LOOK AT THE MODEL LOGIC, INSPECT THIS FUNCTION
-    seals_initialize_project.build_standard_task_tree(p)
+    seals_initialize_project.build_custom_coarse_algorithm_task_tree(p)
 
     # Set the base data dir. The model will check here to see if it has everything it needs to run.
     # If anything is missing, it will download it. You can use the same base_data dir across multiple projects.
@@ -55,8 +52,8 @@ if __name__ == '__main__':
     # SEALS will run based on the scenarios defined in a scenario_definitions.csv
     # If you have not run SEALS before, SEALS will generate it in your project's input_dir.
     # A useful way to get started is to to run SEALS on the test data without modification
-    # and then edit the scenario_definitions.csv to your project needs.
-    p.scenario_definitions_filename = 'test_standard_scenarios.csv'
+    # and then edit the scenario_definitions.csv to your project needs.   
+    p.scenario_definitions_filename = 'custom_coarse_algorithm_scenarios.csv' 
     p.scenario_definitions_path = os.path.join(p.input_dir, p.scenario_definitions_filename)
     seals_initialize_project.initialize_scenario_definitions(p)
 

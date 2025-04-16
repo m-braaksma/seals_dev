@@ -88,9 +88,6 @@ def parse_input_api_md(input_md_path):
                     d[k1][k2][key] = value
                     
                             
-                    
-            
-        # print('line', line)
     hb.print_iterable(d)
     
     return d
@@ -110,8 +107,7 @@ def api_dict_to_df(api_dict):
     
     df = pd.DataFrame(parsed_dict)
     
-    print(df)   
-            
+          
 # Make this follow model spec for all pre-processing and validation
 def assign_df_row_to_object_attributes(input_object, input_row):
     # srtip() 

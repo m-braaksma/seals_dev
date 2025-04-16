@@ -6,10 +6,12 @@ import hazelbean as hb
 import numpy as np
 import pandas as pd
 from matplotlib import pyplot as plt
+import geopandas as gpd
+from hazelbean import config as hb_config
 
-from . import seals_utils
+from seals import seals_utils
 
-L = hb.get_logger()
+L = hb_config.get_logger()
 
 def aligned_habitat_raster(p):
 
@@ -41,14 +43,13 @@ def kba(p):
 
 def star(p):
     star_threat_input_path = p.get_path('biodiversity', 'star', 'star_threat_input.tif')
-    print('star_threat_input_path', star_threat_input_path)
-
+    
     star_threat_input_path2 = p.get_path('star_threat_input.tif')
-    print('star_threat_input_path2', star_threat_input_path2)
 
-    # One solution would be to just require all paths to be defined relative to intermediate dir, duplicating the cur_dir approcah? downside here is it would't leverege paralleization,
-    star_threat_path = p.get_path('star_threat.tif')
-
+    
+    # One solution would be to just require all paths to be defined relative to intermediate dir, duplicating the cur_dir approcah? downside here is it would't leverege paralleization, 
+    star_threat_path = p.get_path('star_threat.tif') 
+    
     if not hb.path_exists(star_threat_path):
         # WTF apparently this was all shifted by a random amount.?
         shift = 90.0 - 83.6361111111106226
@@ -89,7 +90,9 @@ def fine_processed_inputs(p):
 
 def lulc_clip(p):
     # Clip the fine LULC to the project AOI
-
+    
+    ## TODOO It is harder to implement task-level skipping when there is a base_data based file existence check
+    
     if p.run_this:
 
         # In the event that aoi is not global, we will store aoi_lulc and global_lulc paths. In the global version
@@ -109,7 +112,56 @@ def lulc_clip(p):
                     for year in p.years:
                         p.base_data_lulc_src_paths[year] = os.path.join(base_data_lulc_src_dir, src_filename_start + str(year) + '.tif')
                         p.aoi_lulc_src_paths[year] = os.path.join(p.fine_processed_inputs_dir, 'lulc', p.lulc_src_label, src_filename_start + str(year) + '.tif')
-                        p.lulc_src_paths[year] = p.aoi_lulc_src_paths[year]
+                        p.lulc_src_paths[year] = p.aoi_lulc_src_paths[year] 
+                        
+
+                        if not hb.path_exists(p.aoi_lulc_src_paths[year]):
+                            hb.create_directories(p.aoi_lulc_src_paths[year])
+                            hb.clip_raster_by_bb(p.base_data_lulc_src_paths[year], p.bb, p.aoi_lulc_src_paths[year])
+                else:
+                    for year in p.years:
+                        # filename = 'binary_' + p.lulc_src_label + '_' + p.lulc_simplification_label + '_' + str(year) + '_class_' + str(class_label) + '.tif'
+                        # possible_dir = os.path.join('lulc', p.lulc_src_label, p.lulc_simplification_label, 'binaries', str(year))
+                        # output_path = hb.get_first_extant_path(search_path, [p.fine_processed_inputs_dir, p.input_dir, p.base_data_dir])
+                            
+                        search_path = os.path.join('lulc', p.lulc_src_label, src_filename_start + str(year) + '.tif')
+                        # p.base_data_lulc_src_paths[year] = hb.get_first_extant_path(search_path, [p.fine_processed_inputs_dir, p.input_dir, p.base_data_dir])
+                        p.base_data_lulc_src_paths[year] = p.get_path(search_path)
+                        p.aoi_lulc_src_paths[year] = p.base_data_lulc_src_paths[year] 
+                        p.lulc_src_paths[year] = p.base_data_lulc_src_paths[year] 
+
+                        if not hb.path_exists(p.aoi_lulc_src_paths[year]):
+                            hb.create_directories(p.aoi_lulc_src_paths[year])
+                            hb.clip_raster_by_bb(p.base_data_lulc_src_paths[year], p.bb, p.aoi_lulc_src_paths[year])
+
+
+
+def lulc_clip_quick(p):
+    # Clip the fine LULC to the project AOI
+    
+    ## TODOO It is harder to implement task-level skipping when there is a base_data based file existence check
+    
+    if p.run_this:
+
+        # In the event that aoi is not global, we will store aoi_lulc and global_lulc paths. In the global version
+        # both of these dicts will be there, but they will be identical.
+        p.base_data_lulc_src_paths = {}
+        p.aoi_lulc_src_paths = {}
+        p.lulc_src_paths = {}  
+        
+        for index, row in p.scenarios_df.iterrows():
+            seals_utils.assign_df_row_to_object_attributes(p, row)
+
+            base_data_lulc_src_dir = os.path.join(p.base_data_dir, 'lulc', p.lulc_src_label)
+            src_filename_start = 'lulc_' + p.lulc_src_label + '_'
+
+            if p.scenario_type == 'baseline':
+                if p.aoi != 'global':
+                    for year in p.years:
+                        p.base_data_lulc_src_paths[year] = os.path.join(base_data_lulc_src_dir, src_filename_start + str(year) + '.tif')
+                        p.aoi_lulc_src_paths[year] = os.path.join(p.cur_dir, 'lulc', p.lulc_src_label, src_filename_start + str(year) + '.tif')
+                        p.lulc_src_paths[year] = p.aoi_lulc_src_paths[year] 
+                        
 
                         if not hb.path_exists(p.aoi_lulc_src_paths[year]):
                             hb.create_directories(p.aoi_lulc_src_paths[year])

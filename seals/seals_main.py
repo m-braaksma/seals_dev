@@ -34,9 +34,11 @@ parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(os.path.dirname(os.path.abspath(parent_dir)))
 
 
+from seals import seals_utils
 import pandas as pd
-
-from . import seals_utils
+import time
+import math
+from hazelbean import config as hb_config
 
 try:
     from setuptools import Extension
@@ -45,11 +47,12 @@ except ImportError:
     from distutils.core import setup
     from distutils.extension import Extension
 
-L = hb.get_logger()
+L = hb_config.get_logger()
 
 
 env_name = sys.executable.split(os.sep)[-2]
 
+from seals import seals_utils
 if env_name is not None:
     try:
         seals_utils.recompile_cython(env_name)
@@ -57,17 +60,17 @@ if env_name is not None:
         raise NameError('Failed to compile cython. Most likely this is because you have not set the p.conda_env_name above to the name of your a properly configured environment with Cython installed. The other reason it might fail is if you do not have a C compiler installed.  To fix this, search for ')
 
 try:
-    from sealsmodel.seals_cython_functions import calibrate as calibrate
+    from seals.seals_cython_functions import calibrate as calibrate
 except:
     raise NameError('Failed to import a cython-enabled library. Most likely this is because you have not set the p.conda_env_name above to the name of your a properly configured environment with Cython installed. The other reason it might fail is if you do not have a C compiler installed.  To fix this, search for ')
 
 try:
-    from . import seals_cython_functions as seals_cython_functions
+    from seals import seals_cython_functions as seals_cython_functions
 except:
     raise NameError('Failed to import a cython-enabled library. Most likely this is because you have not set the p.conda_env_name above to the name of your a properly configured environment with Cython installed. The other reason it might fail is if you do not have a C compiler installed.  To fix this, search for ')
 
 try:
-    from sealsmodel.seals_cython_functions import calibrate_from_change_matrix
+    from seals.seals_cython_functions import calibrate_from_change_matrix
 except:
     raise NameError('Failed to import a cython-enabled library. Most likely this is because you have not set the p.conda_env_name above to the name of your a properly configured environment with Cython installed. The other reason it might fail is if you do not have a C compiler installed.  To fix this, search for ')
 
@@ -240,7 +243,7 @@ def combined_trained_coefficients(p):
                     block_index_df_input_list = [str(int(block_indices[c][0])) + '_' + str(int(block_indices[c][1])) + '_' + str(int(p.processing_resolution)) + '_' + str(int(p.processing_resolution))] * len(new_df)
                     new_df['calibration_block_index'] = block_index_df_input_list
                     list_of_dfs.append(new_df)
-                    hb.print_in_place('Reading calibration files: ' + str(c / len(block_indices) * 100.0) + '% ' + block_calibration_path)
+                    # hb.print_in_place('Reading calibration files: ' + str(c / len(block_indices) * 100.0) + '% ' + block_calibration_path)
 
             # LEARNING POINT: When concatenating a donkload of dataframes, calling concat once on a long list of DFs is fastest.
             df = pd.concat(list_of_dfs, axis=0, ignore_index=True)
@@ -417,7 +420,7 @@ def calibration(p):
         L.debug('Checking existing blocks for change in the LUH data and excluding if no change.')
         for c, block in enumerate(old_coarse_blocks_list):
             progress_percent = float(c) / float(len(old_coarse_blocks_list)) * 100.0
-            print( 'Percent finished: ' + str(progress_percent), end='\r', flush=False)
+            print ( 'Percent finished: ' + str(progress_percent), end='\r', flush=False)
             skip = []
             current_coarse_change_rasters = []
             for class_label in p.class_labels:
@@ -874,10 +877,7 @@ def calibration_zones_logit(passed_p=None):
                 rf.run_lasso(name, df_dropped, rf.equation_dict, output_dir=p.cur_dir)
             elif 'logit' in name:
                 rf.run_logit(name, df_dropped, rf.equation_dict, output_dir=p.cur_dir)
-                # summary, regression_result = rf.run_logit(name, df_dropped, rf.equation_dict, output_dir=p.cur_dir)
 
-                # print('summary', summary)
-                # print('regression_result', regression_result)
             else:
                 summary, regression_result = rf.run_sm_lm(name, df_dropped, rf.equation_dict, output_dir=p.cur_dir)
 
@@ -1036,7 +1036,9 @@ def calibration_zones(passed_p=None):
             for c, class_label in enumerate(p.class_labels):
                 path = os.path.join(p.cur_dir, '../calibration_prepare_lulc', class_label + '_observed_change.tif')
                 observed_coarse_change_3d[c] = hb.as_array(path).astype(np.float64)
-            plot_coarse_change_3d(p.cur_dir, observed_coarse_change_3d)
+                
+            from seals import seals_visualization_functions
+            seals_visualization_functions.plot_coarse_change_3d(p.cur_dir, observed_coarse_change_3d)
 
 
         for generation_id in range(p.num_generations):
@@ -1394,8 +1396,8 @@ def calibration_plots(passed_p=None):
                 annotation_text = "asdf"
                 output_path = os.path.join(p.cur_dir, class_label + '_calibration_plot.png')
                 similarity_array = hb.as_array(difference_metric_path)
-
-                show_lulc_class_change_difference(baseline_array, observed_array, projected_array, lulc_class, similarity_array, change_array, annotation_text, output_path)
+                from seals import seals_visualization_functions
+                seals_visualization_functions.show_lulc_class_change_difference(baseline_array, observed_array, projected_array, lulc_class, similarity_array, change_array, annotation_text, output_path)
 
 
 def allocations(p):
@@ -1438,7 +1440,20 @@ def allocations(p):
                             task_dir = os.path.join(p.intermediate_dir, p.regional_projections_input_path)
 
 
-                            if hb.path_exists(got_path): # If it's a path, it is required to be based on the regional_change_dir task
+                            # Tricky case here, because there was catears in the refpath, it never found it and thus assumed it was an input to be created
+                            # This means the path has the extra cur_dir derived paths. Hack here to find the refpath and merge it with intermediate
+                            replace_dict = {'<^year^>': str(p.years[0])}
+                            regional_change_classes_path1 = hb.replace_in_string_via_dict(got_path, replace_dict)
+                                
+                            if hb.path_exists(regional_change_classes_path1):
+                                regional_change_classes_path = regional_change_classes_path1
+                            else:
+                                split = regional_change_classes_path1.split(os.path.split(p.cur_dir)[1])[1].replace('\\', '/')[1:]
+                                regional_change_classes_path = os.path.join(p.intermediate_dir, split)                            
+                            # split = regional_change_classes_path1.split(os.path.split(p.cur_dir)[1])[1].replace('\\', '/')[1:]
+                            # regional_change_classes_path = os.path.join(p.intermediate_dir, split)                        
+
+                            if hb.path_exists(regional_change_classes_path): # If it's a path, it is required to be based on the regional_change_dir task
                                 projected_coarse_change_dir = os.path.join(p.regional_change_dir, p.exogenous_label, p.climate_label, p.model_label, p.counterfactual_label, str(year))
                             elif hb.path_exists(task_dir): # if it's a task that exists on the task tree, then that is the scenario root.
                                 projected_coarse_change_dir = os.path.join(task_dir, p.exogenous_label, p.climate_label, p.model_label, p.counterfactual_label, str(year))
@@ -1495,6 +1510,42 @@ def allocation_zones(p):
         'global_coarse_blocks_list': os.path.join(p.cur_dir, 'global_coarse_blocks_list.csv'),
         'global_processing_blocks_list': os.path.join(p.cur_dir, 'global_processing_blocks_list.csv'),
     }
+    
+    if hasattr(p, 'regional_projections_input_path'):
+
+        if p.regional_projections_input_path:
+            got_path = p.get_path(p.regional_projections_input_path)
+            task_dir = os.path.join(p.intermediate_dir, p.regional_projections_input_path)                            
+
+
+            # Tricky case here, because there was catears in the refpath, it never found it and thus assumed it was an input to be created
+            # This means the path has the extra cur_dir derived paths. Hack here to find the refpath and merge it with intermediate
+            replace_dict = {'<^year^>': str(p.years[0])}
+            regional_change_classes_path1 = hb.replace_in_string_via_dict(got_path, replace_dict)
+                
+            if hb.path_exists(regional_change_classes_path1):
+                regional_change_classes_path = regional_change_classes_path1
+            else:
+                split = regional_change_classes_path1.split(os.path.split(p.cur_dir)[1])[1].replace('\\', '/')[1:]
+                regional_change_classes_path = os.path.join(p.intermediate_dir, split)                            
+            # split = regional_change_classes_path1.split(os.path.split(p.cur_dir)[1])[1].replace('\\', '/')[1:]
+            # regional_change_classes_path = os.path.join(p.intermediate_dir, split)                        
+
+            if hb.path_exists(regional_change_classes_path): # If it's a path, it is required to be based on the regional_change_dir task
+                projected_coarse_change_dir = os.path.join(p.regional_change_dir, p.exogenous_label, p.climate_label, p.model_label, p.counterfactual_label, str(p.year))
+            elif hb.path_exists(task_dir): # if it's a task that exists on the task tree, then that is the scenario root.
+                projected_coarse_change_dir = os.path.join(task_dir, p.exogenous_label, p.climate_label, p.model_label, p.counterfactual_label, str(p.year))
+            else:
+                raise NotImplementedError('No interpretation found for regional_projections_input_path of ' + p.regional_projections_input_path)
+            
+        else:
+            projected_coarse_change_dir = os.path.join(p.intermediate_dir, 'coarse_change', 'coarse_simplified_ha_difference_from_previous_year', p.exogenous_label, p.climate_label, p.model_label, p.counterfactual_label, str(p.year))
+
+    
+    else: # If it's blank, then assume there is no regional change projected and it is only run with a coarse_projected. Might need to rename this.                        
+        projected_coarse_change_dir = os.path.join(p.intermediate_dir, 'coarse_change', 'coarse_simplified_ha_difference_from_previous_year', p.exogenous_label, p.climate_label, p.model_label, p.counterfactual_label, str(p.year))
+
+    p.projected_coarse_change_dir = projected_coarse_change_dir
 
     try:
         if all(hb.path_exists(i) for i in p.combined_block_lists_paths):
@@ -1547,7 +1598,6 @@ def allocation_zones(p):
             global_fine_blocks_list = []
             global_coarse_blocks_list = []
             global_processing_blocks_list = []
-            # print('Subset given: ' + str(p.subset_of_blocks_to_run))
             for i in p.subset_of_blocks_to_run:
                 fine_blocks_list.append(old_fine_blocks_list[i])
                 coarse_blocks_list.append(old_coarse_blocks_list[i])
@@ -1593,6 +1643,11 @@ def allocation_zones(p):
 
 
                 filename = class_label + '_' + str(p.year) + '_' + str(p.previous_year) + '_ha_diff_' + p.exogenous_label + '_' + p.climate_label + '_' + p.model_label + '_' + p.counterfactual_label + '.tif'
+                
+                
+                # p.aggregation_method_string = 'covariate_multiply_regional_change_sum'
+                filename = hb.suri(filename, p.aggregation_method_string)
+                
                 gen_path = os.path.join(p.projected_coarse_change_dir, filename)
                 current_coarse_change_rasters.append(gen_path)
 
@@ -1794,7 +1849,6 @@ def allocation(passed_p=None):
         # Check if there is a suitable training tile. IF not, use default.
         # if p.calibrated_parameters_df['type'].isnull().values.any() or len(a) == 0: # NOTE: This is an optimized way to check if there's a nan in an array
         # # if np.isnan(np.sum(p.calibrated_parameters_df['type'].values)): # NOTE: This is an optimized way to check if there's a nan in an array
-        #     print('Unable to load from calibrated parameters file.')
         #     p.calibrated_parameters_df = pd.read_csv(p.local_data_regressors_starting_values_path)
         #     p.calibrated_parameters_df['calibration_block_index'] = p.calibrated_parameters_df.shape[0] * [current_calibration_block_index]
 
@@ -1840,7 +1894,7 @@ def allocation(passed_p=None):
                 join_col = 'spatial_regressor_name'
                 rename_dict ={i: i + '_right' for i in right_df.columns if i != join_col}
                 right_df = right_df.rename(columns=rename_dict)
-                spatial_regressors_df = hb.df_merge(left_df, right_df, left_on=join_col, right_on=join_col)
+                spatial_regressors_df = hb.df_merge(left_df, right_df, left_on=join_col, right_on=join_col, supress_warnings=True)
 
                 for column_label in spatial_regressors_df.columns:
                     if column_label[-6:] != '_right': # HACK
@@ -2113,6 +2167,7 @@ def allocation(passed_p=None):
 
 
         filename_end = '_' + str(p.year) + '_' + str(p.previous_year) + '_ha_diff_'  + p.exogenous_label + '_' + p.climate_label + '_' + p.model_label + '_' + p.counterfactual_label + '.tif'
+        # filename_end = '_' + str(p.year) + '_' + str(p.previous_year) + '_ha_diff_'  + p.exogenous_label + '_' + p.climate_label + '_' + p.model_label + '_' + p.counterfactual_label + '_' + p.aggregation_method_string + '.tif'
         projected_coarse_change_paths = [os.path.join(p.projected_coarse_change_dir, i + filename_end) for i in p.changing_class_labels]
 
 
@@ -2388,7 +2443,9 @@ def stitched_lulc_simplified_scenarios(p):
                                 #     hb.clip_raster_by_bb(p.lulc_simplified_paths[p.key_base_year], p.bb_of_tiles, p.local_output_base_map_path)
                     else:
                         hb.log('Skipping stitching ' + p.lulc_projected_stitched_path + ' because it already exists.')
-
+                    
+                    
+                    # POSSIBLE STARTING POINT: I have no idea why, but the areas in the NORTH outside of the aereg but inside the bb have change, but the areas IN the aezreg don't have change.
                     if p.clip_to_aoi and p.aoi != 'global' and hb.path_exists(p.aoi_path):
                         hb.timer('start clip')
                         clipped_path = hb.suri(p.lulc_projected_stitched_path, 'clipped')
@@ -2627,10 +2684,10 @@ def luh_seals_baseline_adjustment(p):
         ## --------------- Create difference between Coarse and Fine projections ----------------
         coarse_minus_fine_ha_path = os.path.join(p.cur_dir, 'coarse_minus_fine_ha.csv')
         if not hb.path_exists(coarse_minus_fine_ha_path):
-            coarse_class_ha = pd.read_csv(coarse_class_ha_path)
-            lu_classes_ha = pd.read_csv(lu_classes_ha_csv_path)
-
-            output_df = hb.df_merge(coarse_class_ha, lu_classes_ha, on='id', how='outer', verbose=False)
+            coarse_class_ha = pd.read_csv(coarse_class_ha_path)               
+            lu_classes_ha = pd.read_csv(lu_classes_ha_csv_path)                
+            
+            output_df = hb.df_merge(coarse_class_ha, lu_classes_ha, on='id', how='outer', verbose=False, supress_warnings=True)
             output_df.fillna(0, inplace=True)
 
 
@@ -2819,7 +2876,7 @@ def protection_by_aezreg_to_meet_30by30(p):
         if not hb.path_exists(p.protection_by_aezreg_to_meet_30by30_path):
             df1 = pd.read_csv(protected_areas_all_baseline_sums_path)
             df2 = pd.read_csv(ha_to_protect_sums_path)
-            combined_df = hb.df_merge(df1, df2, on='id', how='outer', verbose=False)
+            combined_df = hb.df_merge(df1, df2, on='id', how='outer', supress_warnings=True, verbose=False)
             combined_df.fillna(0, inplace=True)
 
             combined_df['sum'] = combined_df['ha_to_protect_15min_sums'] + combined_df['protected_areas_all_baseline_15min_sums']

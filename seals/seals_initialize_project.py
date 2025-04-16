@@ -4,23 +4,18 @@ import os
 import sys
 
 import hazelbean as hb
-import pandas as pd
+import os, sys
+import hazelbean as hb
 from hazelbean import cloud_utils
+import pandas as pd
 
-from . import config
-from . import seals_generate_base_data
-from . import seals_main
-from . import seals_process_coarse_timeseries
-from . import seals_tasks
-from . import seals_utils
-from . import seals_visualization_tasks
-from .seals_utils import download_google_cloud_blob
-
-# conda_envs_with_cython = hb.check_which_conda_envs_have_library_installed('cython')
-# print(conda_envs_with_cython)
-
-
-
+from seals import seals_main
+from seals import seals_utils
+from seals import seals_generate_base_data
+from seals import seals_process_coarse_timeseries
+from seals import seals_visualization_tasks
+from seals import config
+from seals import seals_tasks
 
 
 def set_advanced_options(p):
@@ -82,6 +77,9 @@ def set_advanced_options(p):
     if not hasattr(p, 'subset_of_blocks_to_run'):
         p.subset_of_blocks_to_run = None # No subset
 
+    if not hasattr(p, 'aggregation_method_string'):
+        p.aggregation_method_string = '' # No subset
+
 
 def initialize_scenario_definitions(p):
 
@@ -121,8 +119,14 @@ def initialize_scenario_definitions(p):
     p.calibration_parameters_override_dict = {}
     # p.calibration_parameters_override_dict['rcp45_ssp2'][2030]['BAU'] = os.path.join(p.input_dir, 'calibration_overrides', 'prevent_cropland_expansion_into_forest.xlsx')
 
-
-
+    # SEALS is based on an extremely comprehensive region classification system defined in the following geopackage.
+    global_regions_vector_ref_path = os.path.join('cartographic', 'ee', 'ee_r264_correspondence.gpkg')
+    p.global_regions_vector_path = p.get_path(global_regions_vector_ref_path)  # Define this even for subglobal runs, 
+    
+    # if not hb.path_exists(p.regions_vector_path):
+    #     # p.regions_vector_path = p.get_path(global_regions_vector_ref_path)
+    #     p.global_regions_vector_path = p.get_path(global_regions_vector_ref_path)    
+    
     # Some variables need further processing into attributes, like parsing a correspondence csv into a dict.
     seals_utils.set_derived_attributes(p)
 
@@ -138,7 +142,7 @@ def build_task_tree_by_name(p, task_tree_name):
 def build_complete_run_task_tree(p):
     ## OUT OF DATE, but should be replicated
     p.project_aoi_task = p.add_task(seals_tasks.project_aoi)
-    p.base_data_task = p.add_task(seals_process_coarse_timeseries.download_base_data, creates_dir=False,                                                         run=1, skip_existing=0)
+    p.base_data_task = p.add_task(seals_process_coarse_timeseries.download_base_data, creates_dir=False,                                            run=1, skip_existing=0)
     p.regressors_starting_values_task = p.add_task(seals_generate_base_data.regressors_starting_values,                                             run=1, skip_existing=0)
     p.generated_data_task = p.add_task(seals_generate_base_data.generated_data,                                                                     run=1, skip_existing=0)
     p.aoi_vector_task = p.add_task(seals_generate_base_data.aoi_vector, parent=p.generated_data_task, creates_dir=False,                            run=1, skip_existing=0)
@@ -148,15 +152,15 @@ def build_complete_run_task_tree(p):
     p.generated_kernels_task = p.add_task(seals_generate_base_data.generated_kernels, parent=p.generated_data_task, creates_dir=False,              run=1, skip_existing=0)
     p.lulc_convolutions_task = p.add_task(seals_generate_base_data.lulc_convolutions, parent=p.generated_data_task, creates_dir=False,              run=1, skip_existing=0)
     p.local_data_regression_starting_values_task = p.add_task(seals_generate_base_data.local_data_regressors_starting_values,                       run=1, skip_existing=0)
-    p.luh2_extraction_task = p.add_task(seals_process_coarse_timeseries.luh2_extraction,                                                                         run=1, skip_existing=0)
-    p.luh2_difference_from_base_year_task = p.add_task(seals_process_coarse_timeseries.luh2_difference_from_base_year,                                           run=1, skip_existing=0)
-    p.luh2_as_simplified_proportion_task = p.add_task(seals_process_coarse_timeseries.luh2_as_simplified_proportion,                                                     run=1, skip_existing=0)
-    p.simplified_difference_from_base_yea_task = p.add_task(seals_process_coarse_timeseries.simplified_difference_from_base_year,                                        run=1, skip_existing=0)
+    p.luh2_extraction_task = p.add_task(seals_process_coarse_timeseries.luh2_extraction,                                                            run=1, skip_existing=0)
+    p.luh2_difference_from_base_year_task = p.add_task(seals_process_coarse_timeseries.luh2_difference_from_base_year,                              run=1, skip_existing=0)
+    p.luh2_as_simplified_proportion_task = p.add_task(seals_process_coarse_timeseries.luh2_as_simplified_proportion,                                run=1, skip_existing=0)
+    p.simplified_difference_from_base_yea_task = p.add_task(seals_process_coarse_timeseries.simplified_difference_from_base_year,                   run=1, skip_existing=0)
     p.calibration_generated_inputs_task = p.add_task(seals_main.calibration_generated_inputs,                                                       run=1, skip_existing=0)
     p.calibration_task = p.add_iterator(seals_main.calibration, run_in_parallel=1,                                                                  run=1, skip_existing=0)
     p.calibration_prepare_lulc_task = p.add_task(seals_main.calibration_prepare_lulc, parent=p.calibration_task,                                    run=1, skip_existing=0)
     p.calibration_change_matrix_task = p.add_task(seals_main.calibration_change_matrix, parent=p.calibration_task,                                  run=1, skip_existing=0)
-    p.calibration_zones_task = p.add_task(seals_main.calibration_zones, parent=p.calibration_task,                                                  run=1, skip_existing=0, logging_level=20)
+    p.calibration_zones_task = p.add_task(seals_main.calibration_zones, parent=p.calibration_task,                                                  run=1, skip_existing=0)
     p.calibration_plots_task = p.add_task(seals_main.calibration_plots, parent=p.calibration_task,                                                  run=1, skip_existing=0)
     p.combined_trained_coefficients_task = p.add_task(seals_main.combined_trained_coefficients,                                                     run=1, skip_existing=0)
     p.allocations_task = p.add_iterator(seals_main.allocations, run_in_parallel=0,                                                                  run=1, skip_existing=0)

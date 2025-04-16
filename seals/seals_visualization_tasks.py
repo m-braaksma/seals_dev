@@ -1,15 +1,13 @@
-import os
-
-import hazelbean as hb
-import numpy as np
-import pandas as pd
 from matplotlib import colors as colors
 from matplotlib import pyplot as plt
-from seals_visualization_functions import *
+import numpy as np
+import hazelbean as hb
+import os
+import pandas as pd
 
 # import seals
-from . import seals_utils
-
+from seals import seals_utils
+from seals.seals_visualization_functions import *
 
 def visualization(p):
     # Make folder for all visualizations.
@@ -536,105 +534,18 @@ sum:
 
 """ + str(round(np.sum(overall_similarity_sum), 3)) + """
 """
-
+        from seals import seals_visualization_functions
         output_path = os.path.join(p.cur_dir, 'gen' + str(generation_id).zfill(6) + '_class_' + str(i) + '_observed_vs_projected.png')
-        show_lulc_class_change_difference(p.baseline_lulc_af.data, p.observed_lulc_af.data, p.projected_lulc_af.data, i, difference_metric,
+        seals_visualization_functions.show_lulc_class_change_difference(p.baseline_lulc_af.data, p.observed_lulc_af.data, p.projected_lulc_af.data, i, difference_metric,
                                           change_array, annotation_text, output_path)
 
         output_path = os.path.join(p.cur_dir, 'gen' + str(generation_id).zfill(6) + '_class_' + str(i) + '_projected_expansion_and_contraction.png')
-        show_class_expansions_vs_change(p.baseline_lulc_af.data, p.projected_lulc_af.data, i, change_array, output_path, title='Class ' + str(i) + ' projected expansion and contraction on coarse change')
+        seals_visualization_functions.show_class_expansions_vs_change(p.baseline_lulc_af.data, p.projected_lulc_af.data, i, change_array, output_path, title='Class ' + str(i) + ' projected expansion and contraction on coarse change')
 
     output_path = os.path.join(p.cur_dir, 'gen' + str(generation_id).zfill(6) + '_lulc_comparison_and_scores.png')
-    show_overall_lulc_fit(p.baseline_lulc_af.data, p.observed_lulc_af.data, p.projected_lulc_af.data, p.overall_similarity_plot_af.data, output_path, title='Overall LULC and fit')
+    seals_visualization_functions.show_overall_lulc_fit(p.baseline_lulc_af.data, p.observed_lulc_af.data, p.projected_lulc_af.data, p.overall_similarity_plot_af.data, output_path, title='Overall LULC and fit')
 
 
-def plot_final_run():
-    global p
-    if p.run_this:
-        if not getattr(p, 'final_generation_id', None):
-            p.final_generation_id = 0
-        plot_generation(p, p.final_generation_id)
-
-        p.plot_change_matrices = 1
-        if p.plot_change_matrices:
-            from matplotlib import colors as colors
-            fig, ax = plt.subplots()
-            fig.set_size_inches(10, 8)
-
-            # Plot the heatmap
-            vmin = np.min(full_change_matrix_no_diagonal)
-            vmax = np.max(full_change_matrix_no_diagonal)
-            im = ax.imshow(full_change_matrix_no_diagonal, cmap='YlGnBu', norm=colors.LogNorm(vmin=vmin + 1, vmax=vmax))
-
-            # Create colorbar
-            import matplotlib.ticker as ticker
-
-            cbar = ax.figure.colorbar(im, ax=ax, format=ticker.FuncFormatter(lambda x, p : int(x)))
-            cbar.set_label('Number of cells changed from class ROW to class COL', size=10)
-
-            # Set ticks...
-            ax.set_xticks(np.arange(full_change_matrix_no_diagonal.shape[1]))
-            ax.set_yticks(np.arange(full_change_matrix_no_diagonal.shape[0]))
-
-            # Create labels for each coarse zone indexed by i and j
-            row_labels = []
-            col_labels = []
-            for i in range(n_classes * p.chunk_coarse_match.n_rows):
-                class_id = i % n_classes
-                coarse_grid_cell_counter = int(i / n_classes)
-                row_labels.append(str(class_id))
-                col_labels.append(str(class_id))
-
-            trans = ax.get_xaxis_transform()  # x in data untis, y in axes fraction
-
-            for i in range(p.chunk_coarse_match.n_rows):
-                ann = ax.annotate('Zone i=' + str(i + 1), xy=(-3.5, (p.chunk_coarse_match.n_rows - i) / p.chunk_coarse_match.n_rows - .5 / p.chunk_coarse_match.n_rows), xycoords=trans)
-                ann = ax.annotate('Zone j=' + str(i + 1), xy=(i * (p.chunk_coarse_match.n_rows + 1) + .25 * p.chunk_coarse_match.n_rows, 1.05), xycoords=trans)  #
-
-            ax.set_xticklabels(col_labels)
-            ax.set_yticklabels(row_labels)
-
-            # Let the horizontal axes labeling appear on top.
-            ax.tick_params(top=True, bottom=False, labeltop=True, labelbottom=False)
-
-            plt.setp(ax.get_xticklabels(), ha="center", rotation_mode="anchor")
-
-            # Turn spines off and create white grid.
-            for edge, spine in ax.spines.items():
-                spine.set_visible(False)
-
-            ax.set_xticks(np.arange(full_change_matrix_no_diagonal.shape[1] + 1) - .5, minor=True)
-            ax.set_yticks(np.arange(full_change_matrix_no_diagonal.shape[0] + 1) - .5, minor=True)
-            ax.grid(which="minor", color="w", linestyle='-', linewidth=1)
-            ax.tick_params(which="minor", bottom=False, left=False)
-
-            full_change_matrix_no_diagonal_png_path = os.path.join(p.cur_dir, 'fcmnd.png')
-            # texts = annotate_heatmap(im, valfmt="{x:.1f} t")
-
-            major_gridline = False
-            for i in range(n_classes * p.chunk_coarse_match.n_rows + 1):
-                try:
-                    if i % n_classes == 0:
-                        major_gridline = i
-                    else:
-                        major_gridline = False
-                except:
-                    major_gridline = 0
-
-                if major_gridline is not False:
-                    xloc = major_gridline - .5
-                    yloc = major_gridline - .5
-                    ax.axvline(x=xloc, color='grey')
-                    ax.axhline(y=yloc, color='grey')
-
-            plt.savefig(full_change_matrix_no_diagonal_png_path)
-
-            vmax = np.max(full_change_matrix_no_diagonal)
-            # full_change_matrix_no_diagonal_png_path = os.path.join(p.cur_dir, 'full_change_matrix_no_diagona_auto.png')
-
-            # Not really necessary but decent exampe of auto plot.
-            # hb.full_show_array(full_change_matrix_no_diagonal, output_path=full_change_matrix_no_diagonal_png_path, cbar_label='Number of changes from class R to class C per tile', title='Change matrix mosaic',
-            #                    num_cbar_ticks=2, vmin=0, vmid=vmax / 10.0, vmax=vmax, color_scheme='ylgnbu')
 
 
 def lulc_pngs(p):

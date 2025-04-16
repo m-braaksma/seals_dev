@@ -5,8 +5,11 @@ import numpy as np
 import pandas as pd
 from matplotlib import colors as colors
 from matplotlib import pyplot as plt
-
-from . import seals_utils
+import numpy as np
+import hazelbean as hb
+import os
+from seals import seals_utils
+import pandas as pd
 
 
 def show_lulc_class_change_difference(baseline_array, observed_array, projected_array, lulc_class, similarity_array, change_array, annotation_text, output_path, **kwargs):
@@ -33,7 +36,7 @@ def show_lulc_class_change_difference(baseline_array, observed_array, projected_
         ax.get_yaxis().set_visible(False)
 
     # TODO Extract from geoecon
-    cmap = ge.generate_custom_colorbar(classes, color_scheme='bold_spectral_white_left', transparent_at_cbar_step=0)
+    cmap = hb.generate_custom_colorbar(classes, color_scheme='bold_spectral_white_left', transparent_at_cbar_step=0)
     im_top_0 = axes[0].imshow(classes, cmap=cmap)
 
     bounds = np.linspace(1, 3, 3)
@@ -53,7 +56,7 @@ def show_lulc_class_change_difference(baseline_array, observed_array, projected_
     cbar0.set_ticklabels(tick_labels)
     cbar0.ax.tick_params(labelsize=6)
 
-    similarity_cmap = ge.generate_custom_colorbar(similarity_array, vmin=0, vmax=1, color_scheme='bold_spectral_white_left', transparent_at_cbar_step=0)
+    similarity_cmap = hb.generate_custom_colorbar(similarity_array, vmin=0, vmax=1, color_scheme='bold_spectral_white_left', transparent_at_cbar_step=0)
     multiplication_factor = int(similarity_array.shape[0] / change_array.shape[0])
     change_array_r = hb.naive_upsample(change_array.astype(np.float64), multiplication_factor)
 
@@ -707,8 +710,8 @@ def show_all_class_expansions_vs_change_with_numeric_report_and_validation(lulc_
 
         validation_array_r = hazelbean.calculation_core.aspect_ratio_array_functions.naive_downscale(validation_array.astype(np.float64), multiplication_factor)
 
-        if class_label == 'grassland':
-            print(validation_array_r)
+        # if class_label == 'grassland':
+        #     print(validation_array_r)
 
         im1 = axes_grid[c][0].imshow(change_array_r, vmin=vmin, vmax=vmax, cmap='BrBG')
         im2 = axes_grid[c][1].imshow(combined, vmin=1, vmax=3, cmap='Spectral')
@@ -808,6 +811,7 @@ def plot_coefficients(output_dir, spatial_layer_coefficients_2d):
 
 
 def plot_coarse_change_3d(output_dir, coarse_change_3d):
+    import math
     plot_n_r, plot_n_c = int(math.ceil(float(coarse_change_3d.shape[0]) ** .5)), int(math.floor(float(coarse_change_3d.shape[0] ** .5)))
     fig, ax = plt.subplots(plot_n_c, plot_n_r)
 
