@@ -4,8 +4,8 @@ import sys
 import hazelbean as hb
 import pandas as pd
 
-from . import seals_initialize_project
-from . import seals_utils
+from seals import seals_initialize_project
+from seals import seals_utils
 
 main = ''
 if __name__ == '__main__':
