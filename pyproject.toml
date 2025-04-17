@@ -11,6 +11,12 @@ keywords = ["geospatial", "raster", "shapefile"]
 dependencies = [
 
 ]
+classifiers = [
+        "Development Status :: 5 - Production/Stable",
+        "Intended Audience :: Science/Research",
+        "Programming Language :: Cython",
+        "Programming Language :: Python :: 3",
+]
 dynamic = ["version"]
 
 [project.urls]

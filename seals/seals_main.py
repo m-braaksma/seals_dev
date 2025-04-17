@@ -15,7 +15,6 @@ import matplotlib
 import matplotlib.gridspec as gridspec
 import numpy as np
 import scipy.ndimage
-from Cython.Build import cythonize
 from matplotlib import pyplot as plt
 from mpl_toolkits.axes_grid1.axes_divider import make_axes_locatable
 from osgeo import gdal
@@ -1894,7 +1893,7 @@ def allocation(passed_p=None):
                 join_col = 'spatial_regressor_name'
                 rename_dict ={i: i + '_right' for i in right_df.columns if i != join_col}
                 right_df = right_df.rename(columns=rename_dict)
-                spatial_regressors_df = hb.df_merge(left_df, right_df, left_on=join_col, right_on=join_col, supress_warnings=True)
+                spatial_regressors_df = hb.df_merge(left_df, right_df, left_on=join_col, right_on=join_col, verbose=False, supress_warnings=True)
 
                 for column_label in spatial_regressors_df.columns:
                     if column_label[-6:] != '_right': # HACK
@@ -2664,7 +2663,7 @@ def luh_seals_baseline_adjustment(p):
                                         output_csv_path=coarse_class_ha_path,
                                         on='id',
                                         column_suffix='ignore',
-                                        verbose=False)
+                                        verbose=False,)
 
             # Now rename and rewrite binary_esa_seals7_2017_[class]
             df = pd.read_csv(coarse_class_ha_path)

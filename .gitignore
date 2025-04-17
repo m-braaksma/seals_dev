@@ -217,3 +217,4 @@ seals/bork/seals_cython_functions.c
 *.prof
 .vscode/launch.json
 .vscode/settings.json
+seals/seals_cython_functions.c
