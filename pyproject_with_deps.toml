@@ -9,7 +9,17 @@ maintainers = [
 ]
 keywords = ["geospatial", "raster", "shapefile"]
 dependencies = [
-
+        "geopandas",
+        "hazelbean",
+        "google-cloud-storage",
+        "matplotlib",
+        "netcdf4",
+        "numpy",
+        "gdal",
+        "pandas",
+        "pygeoprocessing",
+        "scipy",
+        "scikit-learn"
 ]
 dynamic = ["version"]
 
