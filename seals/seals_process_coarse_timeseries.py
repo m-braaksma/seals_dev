@@ -226,7 +226,7 @@ def regional_change(p):
                             hb.raster_calculator(input, op, covariate_multiply_shift_path, 7, -9999.)
                             
                             # This is the one i want to use so also save it as the template. Can choose from different algorithms above.
-                            alg_to_use_path = hb.suri(output_path_template, 'covariate_additive')
+                            alg_to_use_path = hb.suri(output_path_template, 'covariate_sum_shift')
                             hb.path_copy(alg_to_use_path, output_path_template)
                             5
                         # Given all of these, copy the one that we want to use to the name without a label
