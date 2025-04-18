@@ -1416,6 +1416,7 @@ def allocations(p):
         p.iterator_replacements['calibration_parameters_source'] = []
         p.iterator_replacements['fine_resolution'] = []
         p.iterator_replacements['coarse_resolution'] = []
+        p.iterator_replacements['regional_projections_input_path'] = []
 
         p.iterator_replacements['projected_coarse_change_dir'] = []
         p.iterator_replacements['cur_dir_parent_dir'] = []
@@ -1492,6 +1493,13 @@ def allocations(p):
 
                     p.iterator_replacements['coarse_resolution'].append(coarse_resolution)
                     p.iterator_replacements['fine_resolution'].append(fine_resolution)
+                    
+                    # TODO BIG POINT, everytime you enter a new variable in the scenarios dir, you need to add a line here
+                    # to make it update the iterator_projections. But, this is breaky and could be automated, e.g.
+                    # for all things that aren't specified, they just get automatically added.
+                    # if not hasattr(p, 'regional_projections_input_path'):
+                    #     p.regional_projections_input_path = ''
+                    p.iterator_replacements['regional_projections_input_path'].append(p.regional_projections_input_path)
 
                     p.iterator_replacements['projected_coarse_change_dir'].append(projected_coarse_change_dir)
                     p.iterator_replacements['cur_dir_parent_dir'].append(os.path.join(p.cur_dir, p.exogenous_label, p.climate_label, p.model_label, p.counterfactual_label, str(year)))
@@ -1511,7 +1519,7 @@ def allocation_zones(p):
     }
     
     if hasattr(p, 'regional_projections_input_path'):
-
+        
         if p.regional_projections_input_path:
             got_path = p.get_path(p.regional_projections_input_path)
             task_dir = os.path.join(p.intermediate_dir, p.regional_projections_input_path)                            
@@ -1543,7 +1551,9 @@ def allocation_zones(p):
     
     else: # If it's blank, then assume there is no regional change projected and it is only run with a coarse_projected. Might need to rename this.                        
         projected_coarse_change_dir = os.path.join(p.intermediate_dir, 'coarse_change', 'coarse_simplified_ha_difference_from_previous_year', p.exogenous_label, p.climate_label, p.model_label, p.counterfactual_label, str(p.year))
-
+    a = p.counterfactual_label
+    b = p.regional_projections_input_path
+    c = p.projected_coarse_change_dir
     p.projected_coarse_change_dir = projected_coarse_change_dir
 
     try:

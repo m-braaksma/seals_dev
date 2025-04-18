@@ -4,12 +4,9 @@ import hazelbean as hb
 
 def project_aoi(p):
     
-    local_verbose = True
-
     p.ha_per_cell_coarse_path = p.get_path(hb.ha_per_cell_ref_paths[p.coarse_resolution_arcseconds])
     p.ha_per_cell_fine_path = p.get_path(hb.ha_per_cell_ref_paths[p.fine_resolution_arcseconds])
-    if local_verbose:
-        print('before11')    
+  
     # Process p.aoi to set the regional_vector, bb, bb_exact, and aoi_ha_per_cell_paths
     if isinstance(p.aoi, str):
         if p.aoi == 'global':
@@ -41,20 +38,16 @@ def project_aoi(p):
             for current_aoi_path in hb.list_filtered_paths_nonrecursively(p.cur_dir, include_strings='aoi'):
                 if current_aoi_path != p.aoi_path:
                     hb.log('There is more than one AOI in the current directory. This means you are trying to run a project in a new area of interst in a project that was already run in a different area of interest. This is not allowed! You probably want to create a new project directory and set the p = hb.ProjectFlow(...) line to point to the new directory.')
-            print('33')
+
             if not hb.path_exists(p.aoi_path):
                 hb.extract_features_in_shapefile_by_attribute(p.regions_vector_path, p.aoi_path, filter_column, filter_value)
-            
-            if local_verbose:
-                print('before1')
+
             from hazelbean import spatial_projection
             from hazelbean import pyramids
             p.bb_exact = spatial_projection.get_bounding_box(p.aoi_path)
             p.bb = pyramids.get_pyramid_compatible_bb_from_vector_and_resolution(p.aoi_path, p.processing_resolution_arcseconds)
 
-            if local_verbose:
-                print('before2')
-                            
+                           
             # Create a PROJECT-SPECIFIC version of these clipped ones.
             p.aoi_ha_per_cell_fine_path = os.path.join(p.cur_dir, 'pyramids', 'aoi_ha_per_cell_fine.tif')
             if not hb.path_exists(p.aoi_ha_per_cell_fine_path):
