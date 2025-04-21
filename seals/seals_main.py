@@ -52,26 +52,28 @@ L = hb_config.get_logger()
 env_name = sys.executable.split(os.sep)[-2]
 
 from seals import seals_utils
-if env_name is not None:
-    try:
-        seals_utils.recompile_cython(env_name)
-    except:
-        raise NameError('Failed to compile cython. Most likely this is because you have not set the p.conda_env_name above to the name of your a properly configured environment with Cython installed. The other reason it might fail is if you do not have a C compiler installed.  To fix this, search for ')
+
+### Currently disabled because now i have people do it on install.
+# if env_name is not None:
+#     try:
+#         seals_utils.recompile_cython(env_name)
+#     except:
+#         raise NameError('Failed to import a cython-enabled library. You can try manually recompiling the library with "python compile_cython_files.py build_ext --inplace". This requires a C compiler installed. See https://justinandrewjohnson.com/earth_economy_devstack/installation.html. ')
 
 try:
     from seals.seals_cython_functions import calibrate as calibrate
 except:
-    raise NameError('Failed to import a cython-enabled library. Most likely this is because you have not set the p.conda_env_name above to the name of your a properly configured environment with Cython installed. The other reason it might fail is if you do not have a C compiler installed.  To fix this, search for ')
+    raise NameError('Failed to import a cython-enabled library. You can try manually recompiling the library with "python compile_cython_files.py build_ext --inplace". This requires a C compiler installed. See https://justinandrewjohnson.com/earth_economy_devstack/installation.html. ')
 
 try:
     from seals import seals_cython_functions as seals_cython_functions
 except:
-    raise NameError('Failed to import a cython-enabled library. Most likely this is because you have not set the p.conda_env_name above to the name of your a properly configured environment with Cython installed. The other reason it might fail is if you do not have a C compiler installed.  To fix this, search for ')
+    raise NameError('Failed to import a cython-enabled library. You can try manually recompiling the library with "python compile_cython_files.py build_ext --inplace". This requires a C compiler installed. See https://justinandrewjohnson.com/earth_economy_devstack/installation.html. ')
 
 try:
     from seals.seals_cython_functions import calibrate_from_change_matrix
 except:
-    raise NameError('Failed to import a cython-enabled library. Most likely this is because you have not set the p.conda_env_name above to the name of your a properly configured environment with Cython installed. The other reason it might fail is if you do not have a C compiler installed.  To fix this, search for ')
+    raise NameError('Failed to import a cython-enabled library. You can try manually recompiling the library with "python compile_cython_files.py build_ext --inplace". This requires a C compiler installed. See https://justinandrewjohnson.com/earth_economy_devstack/installation.html. ')
 
 
 def initialize_tasks(p):

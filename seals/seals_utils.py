@@ -47,7 +47,7 @@ dev_mode = True
 
 def recompile_cython(env_name):
 
-        # Recompile if needed and configured.
+    # Recompile if needed and configured.
     recompile_cython = 0
     if recompile_cython:
         import subprocess
