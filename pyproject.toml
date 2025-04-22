@@ -1,41 +1,43 @@
 [project]
 name = "sealsmodel"
 description = "Land-use change model and downscaler"
-requires-python = ">=3.6"
 readme = "README.md"
-license-files = ["LICENSE"]
+requires-python = ">=3.6"
+license = { file = "LICENSE" }
 maintainers = [
         {name = "Justin Andrew Johnson"}
 ]
 keywords = ["geospatial", "raster", "shapefile"]
-dependencies = [
-
-]
 classifiers = [
         "Development Status :: 5 - Production/Stable",
         "Intended Audience :: Science/Research",
         "Programming Language :: Cython",
         "Programming Language :: Python :: 3",
 ]
-dynamic = ["version"]
+# Make sure 'dependencies' are correctly handled. If they aren't defined
+# elsewhere (like setup.cfg or setup.py dynamically), list them here:
+# dependencies = [ "numpy>1.0", "some_other_package" ]
+dynamic = ["version", "dependencies"] # Keeping this assumes you handle deps elsewhere
 
 [project.urls]
 repository = "https://github.com/jandrewjohnson/seals_dev"
 
 [build-system]
 requires = [
-        "setuptools>=74.1", "wheel", "cython>3.0.0",
+        "setuptools>=74.1",  # Ensure your setuptools version supports this TOML config
+        "wheel",
+        "cython>3.0.0",
+        "setuptools_scm", # Added setuptools_scm here as it's used below
         'oldest-supported-numpy; python_version<"3.8"',
         'numpy>2; python_version>="3.8"',
 ]
-
-[tool.setuptools]
-packages = ["seals"]
-package-data = { "seals" = ["*.pyx"] }
-ext-modules = [
-    { name = "seals.seals_cython_functions", sources = ["seals/seals_cython_functions.pyx"] }
-]
+build-backend = "setuptools.build_meta"
 
 [tool.setuptools_scm]
 version_scheme = "post-release"
 local_scheme = "node-and-date"
+
+# Added section to control package discovery for flat layout
+[tool.setuptools.packages.find]
+where = ["."]
+exclude = ["seals_tests*"]
