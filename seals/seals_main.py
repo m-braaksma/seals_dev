@@ -1849,7 +1849,8 @@ def allocation(passed_p=None):
         if 'calibration_block_index' in p.combined_calibration_parameters_df.columns: # Then it is the global source we pull from
             current_calibration_block_index = zone_string + '_1_1'
             p.calibrated_parameters_df = p.combined_calibration_parameters_df[p.combined_calibration_parameters_df['calibration_block_index'] == current_calibration_block_index]
-            spatial_regressors_df = p.calibrated_parameters_df.drop(columns=['data_location'])
+            spatial_regressors_df = p.calibrated_parameters_df
+            # spatial_regressors_df = p.calibrated_parameters_df.drop(columns=['data_location'])
             # p.calibrated_parameters_df = p.calibrated_parameters_df.drop(columns=['data_location'])
             # p.calibrated_parameters_df['merge_col'] = p.calibrated_parameters_df['spatial_regressor_name']
         else:
