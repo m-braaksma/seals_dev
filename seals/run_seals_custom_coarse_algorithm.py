@@ -4,7 +4,7 @@
 import os
 import sys
 
-import hazelbean as hb
+import hazelbean as hb 
 import pandas as pd
 
 from seals import seals_initialize_project
