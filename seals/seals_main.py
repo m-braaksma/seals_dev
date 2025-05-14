@@ -63,17 +63,17 @@ from seals import seals_utils
 try:
     from seals.seals_cython_functions import calibrate as calibrate
 except:
-    raise NameError('Failed to import a cython-enabled library. You can try manually recompiling the library with "python compile_cython_files.py build_ext --inplace". This requires a C compiler installed. See https://justinandrewjohnson.com/earth_economy_devstack/installation.html. ')
+    print('Failed to import a cython-enabled library. You can try manually recompiling the library with "python compile_cython_files.py build_ext --inplace". This requires a C compiler installed. See https://justinandrewjohnson.com/earth_economy_devstack/installation.html. Alternatively, you might want to clone the git repo and then install it as an editable install via  pip install -e .')
 
 try:
     from seals import seals_cython_functions as seals_cython_functions
 except:
-    raise NameError('Failed to import a cython-enabled library. You can try manually recompiling the library with "python compile_cython_files.py build_ext --inplace". This requires a C compiler installed. See https://justinandrewjohnson.com/earth_economy_devstack/installation.html. ')
+    print('Failed to import a cython-enabled library. You can try manually recompiling the library with "python compile_cython_files.py build_ext --inplace". This requires a C compiler installed. See https://justinandrewjohnson.com/earth_economy_devstack/installation.html. Alternatively, you might want to clone the git repo and then install it as an editable install via  pip install -e .')
 
 try:
     from seals.seals_cython_functions import calibrate_from_change_matrix
 except:
-    raise NameError('Failed to import a cython-enabled library. You can try manually recompiling the library with "python compile_cython_files.py build_ext --inplace". This requires a C compiler installed. See https://justinandrewjohnson.com/earth_economy_devstack/installation.html. ')
+    print('Failed to import a cython-enabled library. You can try manually recompiling the library with "python compile_cython_files.py build_ext --inplace". This requires a C compiler installed. See https://justinandrewjohnson.com/earth_economy_devstack/installation.html. Alternatively, you might want to clone the git repo and then install it as an editable install via  pip install -e .')
 
 
 def initialize_tasks(p):
@@ -1849,7 +1849,8 @@ def allocation(passed_p=None):
         if 'calibration_block_index' in p.combined_calibration_parameters_df.columns: # Then it is the global source we pull from
             current_calibration_block_index = zone_string + '_1_1'
             p.calibrated_parameters_df = p.combined_calibration_parameters_df[p.combined_calibration_parameters_df['calibration_block_index'] == current_calibration_block_index]
-            spatial_regressors_df = p.calibrated_parameters_df.drop(columns=['data_location'])
+            spatial_regressors_df = p.calibrated_parameters_df
+            # spatial_regressors_df = p.calibrated_parameters_df.drop(columns=['data_location'])
             # p.calibrated_parameters_df = p.calibrated_parameters_df.drop(columns=['data_location'])
             # p.calibrated_parameters_df['merge_col'] = p.calibrated_parameters_df['spatial_regressor_name']
         else:
