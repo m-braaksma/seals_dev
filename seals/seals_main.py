@@ -63,17 +63,17 @@ from seals import seals_utils
 try:
     from seals.seals_cython_functions import calibrate as calibrate
 except:
-    print('Failed to import a cython-enabled library. You can try manually recompiling the library with "python compile_cython_files.py build_ext --inplace". This requires a C compiler installed. See https://justinandrewjohnson.com/earth_economy_devstack/installation.html. ')
+    print('Failed to import a cython-enabled library. You can try manually recompiling the library with "python compile_cython_files.py build_ext --inplace". This requires a C compiler installed. See https://justinandrewjohnson.com/earth_economy_devstack/installation.html. Alternatively, you might want to clone the git repo and then install it as an editable install via  pip install -e .')
 
 try:
     from seals import seals_cython_functions as seals_cython_functions
 except:
-    print('Failed to import a cython-enabled library. You can try manually recompiling the library with "python compile_cython_files.py build_ext --inplace". This requires a C compiler installed. See https://justinandrewjohnson.com/earth_economy_devstack/installation.html. ')
+    print('Failed to import a cython-enabled library. You can try manually recompiling the library with "python compile_cython_files.py build_ext --inplace". This requires a C compiler installed. See https://justinandrewjohnson.com/earth_economy_devstack/installation.html. Alternatively, you might want to clone the git repo and then install it as an editable install via  pip install -e .')
 
 try:
     from seals.seals_cython_functions import calibrate_from_change_matrix
 except:
-    print('Failed to import a cython-enabled library. You can try manually recompiling the library with "python compile_cython_files.py build_ext --inplace". This requires a C compiler installed. See https://justinandrewjohnson.com/earth_economy_devstack/installation.html. ')
+    print('Failed to import a cython-enabled library. You can try manually recompiling the library with "python compile_cython_files.py build_ext --inplace". This requires a C compiler installed. See https://justinandrewjohnson.com/earth_economy_devstack/installation.html. Alternatively, you might want to clone the git repo and then install it as an editable install via  pip install -e .')
 
 
 def initialize_tasks(p):
