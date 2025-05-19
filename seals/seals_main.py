@@ -3028,7 +3028,7 @@ def coarse_simplified_projected_ha_difference_from_previous_year(p):
 
                                 # LEARNING POINT, due to the f'ed logic in the classification algirithms, must have a lowest value in the dict.
                                 # reclassify_rules[np.int32(-9999)] = np.float32(0)
-                                hb.reclassify_raster_hb(ee_r50_aez18_ids_15min_path, reclassify_rules_final, current_coarse_ha_shift_path, 6, -9999)
+                                hb.reclassify_raster_hb(ee_r50_aez18_ids_15min_path, reclassify_rules_final, current_coarse_ha_shift_path, 6, output_ndv=-9999)
 
                         # If the land is not natural, then make a new coarse projection raster that is all zeros
                         else:
@@ -3042,7 +3042,7 @@ def coarse_simplified_projected_ha_difference_from_previous_year(p):
                                         reclassify_rules_final[i] = np.float32(0)
                                     else:
                                         reclassify_rules_final[i] = reclassify_rules[i]
-                                hb.reclassify_raster_hb(ee_r50_aez18_ids_15min_path, reclassify_rules_final, current_coarse_ha_shift_path, 6, -9999)
+                                hb.reclassify_raster_hb(ee_r50_aez18_ids_15min_path, reclassify_rules_final, current_coarse_ha_shift_path, 6, output_ndv=-9999)
 
 
 
