@@ -608,6 +608,7 @@ def coarse_extraction(p):
                         src_nc_path = os.path.join(p.base_data_dir, p.coarse_projections_input_path)
                     else:
                         hb.log('No understandible input_source.')
+                        raise NameError('No understandible input_source for coarse_projections_input_path. The ref_path is specified in the scenario csv file, which resolves to a local or downloadable path. If you got here, it means that the file was not on the online storage bucket you are pointing to. The manual workaround is just to download the file manually and put it in your base_data directly. Path in question is ' + str(p.coarse_projections_input_path))
                 else:
                     hb.log('No coarse change listed')
 
