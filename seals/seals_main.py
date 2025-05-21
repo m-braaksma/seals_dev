@@ -1520,117 +1520,186 @@ def allocation_zones(p):
         'global_processing_blocks_list': os.path.join(p.cur_dir, 'global_processing_blocks_list.csv'),
     }
     
-    if hasattr(p, 'regional_projections_input_path'):
-        
-        if p.regional_projections_input_path:
-            got_path = p.get_path(p.regional_projections_input_path)
-            task_dir = os.path.join(p.intermediate_dir, p.regional_projections_input_path)                            
-
-
-            # Tricky case here, because there was catears in the refpath, it never found it and thus assumed it was an input to be created
-            # This means the path has the extra cur_dir derived paths. Hack here to find the refpath and merge it with intermediate
-            replace_dict = {'<^year^>': str(p.years[0])}
-            regional_change_classes_path1 = hb.replace_in_string_via_dict(got_path, replace_dict)
-                
-            if hb.path_exists(regional_change_classes_path1):
-                regional_change_classes_path = regional_change_classes_path1
-            else:
-                split = regional_change_classes_path1.split(os.path.split(p.cur_dir)[1])[1].replace('\\', '/')[1:]
-                regional_change_classes_path = os.path.join(p.intermediate_dir, split)                            
-            # split = regional_change_classes_path1.split(os.path.split(p.cur_dir)[1])[1].replace('\\', '/')[1:]
-            # regional_change_classes_path = os.path.join(p.intermediate_dir, split)                        
-
-            if hb.path_exists(regional_change_classes_path): # If it's a path, it is required to be based on the regional_change_dir task
-                projected_coarse_change_dir = os.path.join(p.regional_change_dir, p.exogenous_label, p.climate_label, p.model_label, p.counterfactual_label, str(p.year))
-            elif hb.path_exists(task_dir): # if it's a task that exists on the task tree, then that is the scenario root.
-                projected_coarse_change_dir = os.path.join(task_dir, p.exogenous_label, p.climate_label, p.model_label, p.counterfactual_label, str(p.year))
-            else:
-                raise NotImplementedError('No interpretation found for regional_projections_input_path of ' + p.regional_projections_input_path)
-            
-        else:
-            projected_coarse_change_dir = os.path.join(p.intermediate_dir, 'coarse_change', 'coarse_simplified_ha_difference_from_previous_year', p.exogenous_label, p.climate_label, p.model_label, p.counterfactual_label, str(p.year))
-
+    if p.run_this:
     
-    else: # If it's blank, then assume there is no regional change projected and it is only run with a coarse_projected. Might need to rename this.                        
-        projected_coarse_change_dir = os.path.join(p.intermediate_dir, 'coarse_change', 'coarse_simplified_ha_difference_from_previous_year', p.exogenous_label, p.climate_label, p.model_label, p.counterfactual_label, str(p.year))
-    a = p.counterfactual_label
-    b = p.regional_projections_input_path
-    c = p.projected_coarse_change_dir
-    p.projected_coarse_change_dir = projected_coarse_change_dir
+        if hasattr(p, 'regional_projections_input_path'):
+            
+            if p.regional_projections_input_path:
+                got_path = p.get_path(p.regional_projections_input_path)
+                task_dir = os.path.join(p.intermediate_dir, p.regional_projections_input_path)                            
 
-    try:
-        if all(hb.path_exists(i) for i in p.combined_block_lists_paths):
-            blocks_lists_already_exist = True
-        else:
+
+                # Tricky case here, because there was catears in the refpath, it never found it and thus assumed it was an input to be created
+                # This means the path has the extra cur_dir derived paths. Hack here to find the refpath and merge it with intermediate
+                replace_dict = {'<^year^>': str(p.years[0])}
+                regional_change_classes_path1 = hb.replace_in_string_via_dict(got_path, replace_dict)
+                    
+                if hb.path_exists(regional_change_classes_path1):
+                    regional_change_classes_path = regional_change_classes_path1
+                else:
+                    split = regional_change_classes_path1.split(os.path.split(p.cur_dir)[1])[1].replace('\\', '/')[1:]
+                    regional_change_classes_path = os.path.join(p.intermediate_dir, split)                            
+                # split = regional_change_classes_path1.split(os.path.split(p.cur_dir)[1])[1].replace('\\', '/')[1:]
+                # regional_change_classes_path = os.path.join(p.intermediate_dir, split)                        
+
+                if hb.path_exists(regional_change_classes_path): # If it's a path, it is required to be based on the regional_change_dir task
+                    projected_coarse_change_dir = os.path.join(p.regional_change_dir, p.exogenous_label, p.climate_label, p.model_label, p.counterfactual_label, str(p.year))
+                elif hb.path_exists(task_dir): # if it's a task that exists on the task tree, then that is the scenario root.
+                    projected_coarse_change_dir = os.path.join(task_dir, p.exogenous_label, p.climate_label, p.model_label, p.counterfactual_label, str(p.year))
+                else:
+                    raise NotImplementedError('No interpretation found for regional_projections_input_path of ' + p.regional_projections_input_path)
+                
+            else:
+                projected_coarse_change_dir = os.path.join(p.intermediate_dir, 'coarse_change', 'coarse_simplified_ha_difference_from_previous_year', p.exogenous_label, p.climate_label, p.model_label, p.counterfactual_label, str(p.year))
+
+        
+        else: # If it's blank, then assume there is no regional change projected and it is only run with a coarse_projected. Might need to rename this.                        
+            projected_coarse_change_dir = os.path.join(p.intermediate_dir, 'coarse_change', 'coarse_simplified_ha_difference_from_previous_year', p.exogenous_label, p.climate_label, p.model_label, p.counterfactual_label, str(p.year))
+        a = p.counterfactual_label
+        b = p.regional_projections_input_path
+        c = p.projected_coarse_change_dir
+        p.projected_coarse_change_dir = projected_coarse_change_dir
+
+        try:
+            if all(hb.path_exists(i) for i in p.combined_block_lists_paths):
+                blocks_lists_already_exist = True
+            else:
+                blocks_lists_already_exist = False
+        except:
             blocks_lists_already_exist = False
-    except:
-        blocks_lists_already_exist = False
 
 
-    disable_precached_block_lists = True
-    if blocks_lists_already_exist and not disable_precached_block_lists:
-        fine_blocks_list = list(hb.file_to_python_object(os.path.join(p.cur_dir, 'fine_blocks_list.csv'), '2d_list'))
-        coarse_blocks_list = list(hb.file_to_python_object(os.path.join(p.cur_dir, 'coarse_blocks_list.csv'), '2d_list'))
-        processing_blocks_list = list(hb.file_to_python_object(os.path.join(p.cur_dir, 'processing_blocks_list.csv'), '2d_list'))
-        global_fine_blocks_list = list(hb.file_to_python_object(os.path.join(p.cur_dir, 'global_fine_blocks_list.csv'), '2d_list'))
-        global_coarse_blocks_list = list(hb.file_to_python_object(os.path.join(p.cur_dir, 'global_coarse_blocks_list.csv'), '2d_list'))
-        global_processing_blocks_list = list(hb.file_to_python_object(os.path.join(p.cur_dir, 'global_processing_blocks_list.csv'), '2d_list'))
+        disable_precached_block_lists = True
+        if blocks_lists_already_exist and not disable_precached_block_lists:
+            fine_blocks_list = list(hb.file_to_python_object(os.path.join(p.cur_dir, 'fine_blocks_list.csv'), '2d_list'))
+            coarse_blocks_list = list(hb.file_to_python_object(os.path.join(p.cur_dir, 'coarse_blocks_list.csv'), '2d_list'))
+            processing_blocks_list = list(hb.file_to_python_object(os.path.join(p.cur_dir, 'processing_blocks_list.csv'), '2d_list'))
+            global_fine_blocks_list = list(hb.file_to_python_object(os.path.join(p.cur_dir, 'global_fine_blocks_list.csv'), '2d_list'))
+            global_coarse_blocks_list = list(hb.file_to_python_object(os.path.join(p.cur_dir, 'global_coarse_blocks_list.csv'), '2d_list'))
+            global_processing_blocks_list = list(hb.file_to_python_object(os.path.join(p.cur_dir, 'global_processing_blocks_list.csv'), '2d_list'))
 
-    else:
-        if p.aoi == 'global':
-
-            fine_blocks_list = hb.get_global_block_list_from_resolution(p.processing_resolution, p.fine_resolution)
-            coarse_blocks_list = hb.get_global_block_list_from_resolution(p.processing_resolution, p.coarse_resolution)
-            processing_blocks_list = hb.get_global_block_list_from_resolution(p.processing_resolution, p.processing_resolution)
-            global_fine_blocks_list = fine_blocks_list
-            global_coarse_blocks_list = coarse_blocks_list
-            global_processing_blocks_list = hb.get_global_block_list_from_resolution_and_bb(p.processing_resolution, p.processing_resolution, p.bb)
         else:
-            fine_blocks_list = hb.pyramids.get_subglobal_block_list_from_resolution_and_bb(p.processing_resolution, p.fine_resolution, p.bb, verbose=0)
-            coarse_blocks_list = hb.pyramids.get_subglobal_block_list_from_resolution_and_bb(p.processing_resolution, p.coarse_resolution, p.bb, verbose=0)
-            processing_blocks_list = hb.pyramids.get_subglobal_block_list_from_resolution_and_bb(p.processing_resolution, p.processing_resolution, p.bb, verbose=0)
-            global_fine_blocks_list = hb.get_global_block_list_from_resolution_and_bb(p.processing_resolution, p.fine_resolution, p.bb, verbose=0)
-            global_coarse_blocks_list = hb.get_global_block_list_from_resolution_and_bb(p.processing_resolution, p.coarse_resolution, p.bb, verbose=0)
-            global_processing_blocks_list = hb.get_global_block_list_from_resolution_and_bb(p.processing_resolution, p.processing_resolution, p.bb, verbose=0)
+            if p.aoi == 'global':
 
-        hb.log('Length of iterator before pruning in task calibration:', len(fine_blocks_list))
+                fine_blocks_list = hb.get_global_block_list_from_resolution(p.processing_resolution, p.fine_resolution)
+                coarse_blocks_list = hb.get_global_block_list_from_resolution(p.processing_resolution, p.coarse_resolution)
+                processing_blocks_list = hb.get_global_block_list_from_resolution(p.processing_resolution, p.processing_resolution)
+                global_fine_blocks_list = fine_blocks_list
+                global_coarse_blocks_list = coarse_blocks_list
+                global_processing_blocks_list = hb.get_global_block_list_from_resolution_and_bb(p.processing_resolution, p.processing_resolution, p.bb)
+            else:
+                fine_blocks_list = hb.pyramids.get_subglobal_block_list_from_resolution_and_bb(p.processing_resolution, p.fine_resolution, p.bb, verbose=0)
+                coarse_blocks_list = hb.pyramids.get_subglobal_block_list_from_resolution_and_bb(p.processing_resolution, p.coarse_resolution, p.bb, verbose=0)
+                processing_blocks_list = hb.pyramids.get_subglobal_block_list_from_resolution_and_bb(p.processing_resolution, p.processing_resolution, p.bb, verbose=0)
+                global_fine_blocks_list = hb.get_global_block_list_from_resolution_and_bb(p.processing_resolution, p.fine_resolution, p.bb, verbose=0)
+                global_coarse_blocks_list = hb.get_global_block_list_from_resolution_and_bb(p.processing_resolution, p.coarse_resolution, p.bb, verbose=0)
+                global_processing_blocks_list = hb.get_global_block_list_from_resolution_and_bb(p.processing_resolution, p.processing_resolution, p.bb, verbose=0)
 
-        if p.subset_of_blocks_to_run is not None:
+            hb.log('Length of iterator before pruning in task calibration:', len(fine_blocks_list))
+
+            if p.subset_of_blocks_to_run is not None:
+                old_fine_blocks_list = fine_blocks_list
+                old_coarse_blocks_list = coarse_blocks_list
+                old_processing_blocks_list = processing_blocks_list
+                old_global_fine_blocks_list = global_fine_blocks_list
+                old_global_coarse_blocks_list = global_coarse_blocks_list
+                old_global_processing_blocks_list = global_processing_blocks_list
+
+                fine_blocks_list = []
+                coarse_blocks_list = []
+                processing_blocks_list = []
+                global_fine_blocks_list = []
+                global_coarse_blocks_list = []
+                global_processing_blocks_list = []
+                for i in p.subset_of_blocks_to_run:
+                    fine_blocks_list.append(old_fine_blocks_list[i])
+                    coarse_blocks_list.append(old_coarse_blocks_list[i])
+                    processing_blocks_list.append(old_processing_blocks_list[i])
+                    global_fine_blocks_list.append(old_global_fine_blocks_list[i])
+                    global_coarse_blocks_list.append(old_global_coarse_blocks_list[i])
+                    global_processing_blocks_list.append(old_global_processing_blocks_list[i])
+
+        hb.log('Length of iterator after considering subset_of_blocks_to_run:', len(fine_blocks_list))
+
+        combined_block_lists_dict = {
+            'fine_blocks_list': fine_blocks_list,
+            'coarse_blocks_list': coarse_blocks_list,
+            'processing_blocks_list': processing_blocks_list,
+            'global_fine_blocks_list': global_fine_blocks_list,
+            'global_coarse_blocks_list': global_coarse_blocks_list,
+            'global_processing_blocks_list': global_processing_blocks_list,
+        }
+
+        if not all([hb.path_exists(i) for i in p.combined_block_lists_paths.values()]) or disable_precached_block_lists:
+
+            # Pare down the number of blocks to run based on if there is change in the projected_coarse_change
             old_fine_blocks_list = fine_blocks_list
             old_coarse_blocks_list = coarse_blocks_list
             old_processing_blocks_list = processing_blocks_list
             old_global_fine_blocks_list = global_fine_blocks_list
             old_global_coarse_blocks_list = global_coarse_blocks_list
             old_global_processing_blocks_list = global_processing_blocks_list
-
             fine_blocks_list = []
             coarse_blocks_list = []
             processing_blocks_list = []
             global_fine_blocks_list = []
             global_coarse_blocks_list = []
             global_processing_blocks_list = []
-            for i in p.subset_of_blocks_to_run:
-                fine_blocks_list.append(old_fine_blocks_list[i])
-                coarse_blocks_list.append(old_coarse_blocks_list[i])
-                processing_blocks_list.append(old_processing_blocks_list[i])
-                global_fine_blocks_list.append(old_global_fine_blocks_list[i])
-                global_coarse_blocks_list.append(old_global_coarse_blocks_list[i])
-                global_processing_blocks_list.append(old_global_processing_blocks_list[i])
 
-    hb.log('Length of iterator after considering subset_of_blocks_to_run:', len(fine_blocks_list))
+            L.debug('Checking existing blocks for change in the LUH data and excluding if no change.')
+            for c, block in enumerate(old_coarse_blocks_list):
+                progress_percent = float(c) / float(len(old_coarse_blocks_list)) * 100.0
+                skip = []
 
-    combined_block_lists_dict = {
-        'fine_blocks_list': fine_blocks_list,
-        'coarse_blocks_list': coarse_blocks_list,
-        'processing_blocks_list': processing_blocks_list,
-        'global_fine_blocks_list': global_fine_blocks_list,
-        'global_coarse_blocks_list': global_coarse_blocks_list,
-        'global_processing_blocks_list': global_processing_blocks_list,
-    }
+                current_coarse_change_rasters = []
+                for class_label in p.changing_class_labels:
 
-    if not all([hb.path_exists(i) for i in p.combined_block_lists_paths.values()]) or disable_precached_block_lists:
 
-        # Pare down the number of blocks to run based on if there is change in the projected_coarse_change
+                    filename = class_label + '_' + str(p.year) + '_' + str(p.previous_year) + '_ha_diff_' + p.exogenous_label + '_' + p.climate_label + '_' + p.model_label + '_' + p.counterfactual_label + '.tif'
+                    
+                    
+                    # p.aggregation_method_string = 'covariate_multiply_regional_change_sum'
+                    filename = hb.suri(filename, p.aggregation_method_string)
+                    
+                    gen_path = os.path.join(p.projected_coarse_change_dir, filename)
+                    current_coarse_change_rasters.append(gen_path)
+
+
+                for path in current_coarse_change_rasters:
+                    # for path in hb.list_filtered_paths_nonrecursively(p.projected_coarse_change_dir, include_extensions='.tif'):
+                    block = old_coarse_blocks_list[c]
+                    a = hb.load_geotiff_chunk_by_cr_size(path, block)
+                    changed = np.where((a != 0) & (a != -9999.) & (~np.isnan(a)), 1, 0)
+                    # hb.show(a)
+                    # 'C:\\Users\\jajohns\\Files\\Research\\cge\\seals\\projects\\test_seals_magpie\\intermediate\\magpie_as_simplified_proportion\\rcp45_ssp2\\2050\\SSP2_BiodivPol_ClimPol_NCPpol_LPJmL5\\urban_2050_2015_ha_difference.tif'
+
+                    # hb.show(changed)
+                    hb.debug('Checking to see if there is change in ', path)
+                    if np.nansum(changed) == 0:
+                        hb.debug('Skipping because no change in coarse projections:', path)
+                        skip.append(True)
+                    else:
+                        skip.append(False)
+
+                if not all(skip):
+                    fine_blocks_list.append(old_fine_blocks_list[c])
+                    coarse_blocks_list.append(old_coarse_blocks_list[c])
+                    processing_blocks_list.append(old_processing_blocks_list[c])
+                    global_fine_blocks_list.append(old_global_fine_blocks_list[c])
+                    global_coarse_blocks_list.append(old_global_coarse_blocks_list[c])
+                    global_processing_blocks_list.append(old_global_processing_blocks_list[c])
+
+            # WORKS but disabled for troubleshooting
+            # Write the blockslists to csvs to avoid future reprocessing (actually is quite slow (2 mins) when 64000 tiles).
+            for block_name, block_list in combined_block_lists_dict.items():
+                hb.python_object_to_csv(block_list, os.path.join(p.cur_dir, block_name + '.csv'), '2d_list')
+
+        else:
+            raise NameError('should not get here.')
+
+        hb.log('Length of iterator after removing non-changing zones:', len(fine_blocks_list))
+
+        # Remove from iterator lists that have already been computed.
         old_fine_blocks_list = fine_blocks_list
         old_coarse_blocks_list = coarse_blocks_list
         old_processing_blocks_list = processing_blocks_list
@@ -1644,42 +1713,10 @@ def allocation_zones(p):
         global_coarse_blocks_list = []
         global_processing_blocks_list = []
 
-        L.debug('Checking existing blocks for change in the LUH data and excluding if no change.')
-        for c, block in enumerate(old_coarse_blocks_list):
-            progress_percent = float(c) / float(len(old_coarse_blocks_list)) * 100.0
-            skip = []
-
-            current_coarse_change_rasters = []
-            for class_label in p.changing_class_labels:
-
-
-                filename = class_label + '_' + str(p.year) + '_' + str(p.previous_year) + '_ha_diff_' + p.exogenous_label + '_' + p.climate_label + '_' + p.model_label + '_' + p.counterfactual_label + '.tif'
-                
-                
-                # p.aggregation_method_string = 'covariate_multiply_regional_change_sum'
-                filename = hb.suri(filename, p.aggregation_method_string)
-                
-                gen_path = os.path.join(p.projected_coarse_change_dir, filename)
-                current_coarse_change_rasters.append(gen_path)
-
-
-            for path in current_coarse_change_rasters:
-                # for path in hb.list_filtered_paths_nonrecursively(p.projected_coarse_change_dir, include_extensions='.tif'):
-                block = old_coarse_blocks_list[c]
-                a = hb.load_geotiff_chunk_by_cr_size(path, block)
-                changed = np.where((a != 0) & (a != -9999.) & (~np.isnan(a)), 1, 0)
-                # hb.show(a)
-                # 'C:\\Users\\jajohns\\Files\\Research\\cge\\seals\\projects\\test_seals_magpie\\intermediate\\magpie_as_simplified_proportion\\rcp45_ssp2\\2050\\SSP2_BiodivPol_ClimPol_NCPpol_LPJmL5\\urban_2050_2015_ha_difference.tif'
-
-                # hb.show(changed)
-                hb.debug('Checking to see if there is change in ', path)
-                if np.nansum(changed) == 0:
-                    hb.debug('Skipping because no change in coarse projections:', path)
-                    skip.append(True)
-                else:
-                    skip.append(False)
-
-            if not all(skip):
+        for c, fine_block in enumerate(old_global_processing_blocks_list):
+            tile_dir = str(fine_block[0]) + '_' + str(fine_block[1])
+            expected_path = os.path.join(p.cur_dir, tile_dir, 'allocation', 'lulc_' + p.lulc_src_label + '_' + p.lulc_simplification_label + '_' + p.exogenous_label + '_' + p.climate_label + '_' + p.model_label + '_' + p.counterfactual_label + '_' + str(p.year) + '.tif')
+            if not hb.path_exists(expected_path):
                 fine_blocks_list.append(old_fine_blocks_list[c])
                 coarse_blocks_list.append(old_coarse_blocks_list[c])
                 processing_blocks_list.append(old_processing_blocks_list[c])
@@ -1687,122 +1724,87 @@ def allocation_zones(p):
                 global_coarse_blocks_list.append(old_global_coarse_blocks_list[c])
                 global_processing_blocks_list.append(old_global_processing_blocks_list[c])
 
-        # WORKS but disabled for troubleshooting
-        # Write the blockslists to csvs to avoid future reprocessing (actually is quite slow (2 mins) when 64000 tiles).
-        for block_name, block_list in combined_block_lists_dict.items():
-            hb.python_object_to_csv(block_list, os.path.join(p.cur_dir, block_name + '.csv'), '2d_list')
+        hb.log('Length of iterator after removing finished zones:', len(fine_blocks_list))
 
-    else:
-        raise NameError('should not get here.')
+        # Process for each block which calibration file it should use.
+        nyi = True
 
-    hb.log('Length of iterator after removing non-changing zones:', len(fine_blocks_list))
+        if not nyi:
+            # NOTE an interesting quirk here. Although I want to make sure nothing runs globally when there is a target AOI set
+            # , I do let this one run globally because its fast, and then the aoi-specific run just needs to use the right ID.
+            p.aezreg_zones_raster_path = os.path.join(p.cur_dir, 'aezreg_zones.tif')
+            p.processing_zones_raster_path = os.path.join(p.cur_dir, 'processing_zones.tif')
+            p.processing_zones_to_calibration_chunk_path = os.path.join(p.cur_dir, 'processing_zones_to_calibration_chunk.csv')
+            p.processing_zones_match_path = p.match_paths[3600.0]
+            if p.run_this:
+                if not hb.path_exists(p.aezreg_zones_raster_path):
+                    hb.convert_polygons_to_id_raster(p.calibration_zone_polygons_path, p.aezreg_zones_raster_path, p.coarse_match_path, id_column_label='pyramid_id', data_type=5, ndv=-9999, all_touched=True, compress=True)
+                if not hb.path_exists(p.processing_zones_raster_path):
+                    hb.convert_polygons_to_id_raster(p.calibration_zone_polygons_path, p.processing_zones_raster_path, p.processing_zones_match_path, id_column_label='pyramid_id', data_type=5, ndv=-9999, all_touched=True, compress=True)
 
-    # Remove from iterator lists that have already been computed.
-    old_fine_blocks_list = fine_blocks_list
-    old_coarse_blocks_list = coarse_blocks_list
-    old_processing_blocks_list = processing_blocks_list
-    old_global_fine_blocks_list = global_fine_blocks_list
-    old_global_coarse_blocks_list = global_coarse_blocks_list
-    old_global_processing_blocks_list = global_processing_blocks_list
-    fine_blocks_list = []
-    coarse_blocks_list = []
-    processing_blocks_list = []
-    global_fine_blocks_list = []
-    global_coarse_blocks_list = []
-    global_processing_blocks_list = []
+                if not hb.path_exists(p.processing_zones_to_calibration_chunk_path):
+                    calibration_zones_to_calibration_chunk = {}
 
-    for c, fine_block in enumerate(old_global_processing_blocks_list):
-        tile_dir = str(fine_block[0]) + '_' + str(fine_block[1])
-        expected_path = os.path.join(p.cur_dir, tile_dir, 'allocation', 'lulc_' + p.lulc_src_label + '_' + p.lulc_simplification_label + '_' + p.exogenous_label + '_' + p.climate_label + '_' + p.model_label + '_' + p.counterfactual_label + '_' + str(p.year) + '.tif')
-        if not hb.path_exists(expected_path):
-            fine_blocks_list.append(old_fine_blocks_list[c])
-            coarse_blocks_list.append(old_coarse_blocks_list[c])
-            processing_blocks_list.append(old_processing_blocks_list[c])
-            global_fine_blocks_list.append(old_global_fine_blocks_list[c])
-            global_coarse_blocks_list.append(old_global_coarse_blocks_list[c])
-            global_processing_blocks_list.append(old_global_processing_blocks_list[c])
+                    zones_raster = hb.as_array(p.processing_zones_raster_path)
+                    uniques = np.unique(zones_raster)
+                    r, c = hb.calculate_zone_to_chunk_list_lookup_dict(zones_raster)
 
-    hb.log('Length of iterator after removing finished zones:', len(fine_blocks_list))
+                    zone_calibration_block_lookup_dict = {}
+                    for u in uniques[uniques != -9999]:
+                        n_in_zone = len(r[u][r[u] > 0])
+                        selected_id = math.floor(n_in_zone / 2)
+                        zone_calibration_block_lookup_dict[u] = (r[u, selected_id], c[u, selected_id])
 
-    # Process for each block which calibration file it should use.
-    nyi = True
+                    with open(p.processing_zones_to_calibration_chunk_path, "w") as f:
+                        for k, line in zone_calibration_block_lookup_dict.items():
+                            f.write(str(k) + ',' + str(line[0]) + '_' + str(line[1]) + '\n')
 
-    if not nyi:
-        # NOTE an interesting quirk here. Although I want to make sure nothing runs globally when there is a target AOI set
-        # , I do let this one run globally because its fast, and then the aoi-specific run just needs to use the right ID.
-        p.aezreg_zones_raster_path = os.path.join(p.cur_dir, 'aezreg_zones.tif')
-        p.processing_zones_raster_path = os.path.join(p.cur_dir, 'processing_zones.tif')
-        p.processing_zones_to_calibration_chunk_path = os.path.join(p.cur_dir, 'processing_zones_to_calibration_chunk.csv')
-        p.processing_zones_match_path = p.match_paths[3600.0]
-        if p.run_this:
-            if not hb.path_exists(p.aezreg_zones_raster_path):
-                hb.convert_polygons_to_id_raster(p.calibration_zone_polygons_path, p.aezreg_zones_raster_path, p.coarse_match_path, id_column_label='pyramid_id', data_type=5, ndv=-9999, all_touched=True, compress=True)
-            if not hb.path_exists(p.processing_zones_raster_path):
-                hb.convert_polygons_to_id_raster(p.calibration_zone_polygons_path, p.processing_zones_raster_path, p.processing_zones_match_path, id_column_label='pyramid_id', data_type=5, ndv=-9999, all_touched=True, compress=True)
+        # Load the calibration variable used for all the zones if relying ona  precalcualted one.
+        if hb.path_exists(os.path.join(p.input_dir, p.calibration_parameters_source)):
+            calibration_parameters_path = os.path.join(p.input_dir, p.calibration_parameters_source)
+        elif hb.path_exists(os.path.join(p.base_data_dir, p.calibration_parameters_source)):
+            calibration_parameters_path = os.path.join(p.base_data_dir, p.calibration_parameters_source)
+        else:
+            hb.log('Could not find calibration parameters file at ' + os.path.join(p.input_dir, p.calibration_parameters_source) + ' or ' + os.path.join(p.base_data_dir, p.calibration_parameters_source))
 
-            if not hb.path_exists(p.processing_zones_to_calibration_chunk_path):
-                calibration_zones_to_calibration_chunk = {}
+        if hb.path_exists(calibration_parameters_path):
+            hb.log('Starting to read ' + calibration_parameters_path)
+            df = pd.read_csv(calibration_parameters_path)
 
-                zones_raster = hb.as_array(p.processing_zones_raster_path)
-                uniques = np.unique(zones_raster)
-                r, c = hb.calculate_zone_to_chunk_list_lookup_dict(zones_raster)
+            # TODO This is bad. Fix it.
+            # TODOOO, YES IT WAS A BAD IDEA YOU DUMMY.
+            # TODOOO AGAIN. Indeed, still bad.
+            year_replacement_dict = {}
+            year_replacement_dict['2014'] = p.key_base_year
+            for src, dst in year_replacement_dict.items():
 
-                zone_calibration_block_lookup_dict = {}
-                for u in uniques[uniques != -9999]:
-                    n_in_zone = len(r[u][r[u] > 0])
-                    selected_id = math.floor(n_in_zone / 2)
-                    zone_calibration_block_lookup_dict[u] = (r[u, selected_id], c[u, selected_id])
+                df['data_location'] = df.loc[:, 'data_location'].replace({str(src): str(dst)}, regex=True)
 
-                with open(p.processing_zones_to_calibration_chunk_path, "w") as f:
-                    for k, line in zone_calibration_block_lookup_dict.items():
-                        f.write(str(k) + ',' + str(line[0]) + '_' + str(line[1]) + '\n')
+            # TODOOO Consider renaming this.
+            p.combined_calibration_parameters_df = df
 
-    # Load the calibration variable used for all the zones if relying ona  precalcualted one.
-    if hb.path_exists(os.path.join(p.input_dir, p.calibration_parameters_source)):
-        calibration_parameters_path = os.path.join(p.input_dir, p.calibration_parameters_source)
-    elif hb.path_exists(os.path.join(p.base_data_dir, p.calibration_parameters_source)):
-        calibration_parameters_path = os.path.join(p.base_data_dir, p.calibration_parameters_source)
-    else:
-        hb.log('Could not find calibration parameters file at ' + os.path.join(p.input_dir, p.calibration_parameters_source) + ' or ' + os.path.join(p.base_data_dir, p.calibration_parameters_source))
+            hb.log('Finished reading ' + calibration_parameters_path)
 
-    if hb.path_exists(calibration_parameters_path):
-        hb.log('Starting to read ' + calibration_parameters_path)
-        df = pd.read_csv(calibration_parameters_path)
+        p.iterator_replacements = collections.OrderedDict()
+        p.iterator_replacements['fine_blocks_list'] = fine_blocks_list
+        p.iterator_replacements['coarse_blocks_list'] = coarse_blocks_list
+        p.iterator_replacements['processing_blocks_list'] = processing_blocks_list
+        p.iterator_replacements['global_fine_blocks_list'] = global_fine_blocks_list
+        p.iterator_replacements['global_coarse_blocks_list'] = global_coarse_blocks_list
+        p.iterator_replacements['global_processing_blocks_list'] = global_processing_blocks_list
 
-        # TODO This is bad. Fix it.
-        # TODOOO, YES IT WAS A BAD IDEA YOU DUMMY.
-        # TODOOO AGAIN. Indeed, still bad.
-        year_replacement_dict = {}
-        year_replacement_dict['2014'] = p.key_base_year
-        for src, dst in year_replacement_dict.items():
-
-            df['data_location'] = df.loc[:, 'data_location'].replace({str(src): str(dst)}, regex=True)
-
-        # TODOOO Consider renaming this.
-        p.combined_calibration_parameters_df = df
-
-        hb.log('Finished reading ' + calibration_parameters_path)
-
-    p.iterator_replacements = collections.OrderedDict()
-    p.iterator_replacements['fine_blocks_list'] = fine_blocks_list
-    p.iterator_replacements['coarse_blocks_list'] = coarse_blocks_list
-    p.iterator_replacements['processing_blocks_list'] = processing_blocks_list
-    p.iterator_replacements['global_fine_blocks_list'] = global_fine_blocks_list
-    p.iterator_replacements['global_coarse_blocks_list'] = global_coarse_blocks_list
-    p.iterator_replacements['global_processing_blocks_list'] = global_processing_blocks_list
-
-    # Trickier replacement that will redefine the parent dir for each task so that it also WRITES in the correct output location
-    p.iterator_replacements['cur_dir_parent_dir'] = [p.cur_dir_parent_dir+ '/allocation_zones/' + str(i[0]) + '_' + str(i[1]) for i in global_processing_blocks_list]
+        # Trickier replacement that will redefine the parent dir for each task so that it also WRITES in the correct output location
+        p.iterator_replacements['cur_dir_parent_dir'] = [p.cur_dir_parent_dir+ '/allocation_zones/' + str(i[0]) + '_' + str(i[1]) for i in global_processing_blocks_list]
 
 
-    if p.run_only_first_element_of_each_iterator:
-        p.iterator_replacements['fine_blocks_list'] = [p.iterator_replacements['fine_blocks_list'][0]]
-        p.iterator_replacements['coarse_blocks_list'] = [p.iterator_replacements['coarse_blocks_list'][0]]
-        p.iterator_replacements['processing_blocks_list'] = [p.iterator_replacements['processing_blocks_list'][0]]
-        p.iterator_replacements['global_fine_blocks_list'] = [p.iterator_replacements['global_fine_blocks_list'][0]]
-        p.iterator_replacements['global_coarse_blocks_list'] = [p.iterator_replacements['global_coarse_blocks_list'][0]]
-        p.iterator_replacements['global_processing_blocks_list'] = [p.iterator_replacements['global_processing_blocks_list'][0]]
-        p.iterator_replacements['cur_dir_parent_dir'] = [p.iterator_replacements['cur_dir_parent_dir'][0]]
+        if p.run_only_first_element_of_each_iterator:
+            p.iterator_replacements['fine_blocks_list'] = [p.iterator_replacements['fine_blocks_list'][0]]
+            p.iterator_replacements['coarse_blocks_list'] = [p.iterator_replacements['coarse_blocks_list'][0]]
+            p.iterator_replacements['processing_blocks_list'] = [p.iterator_replacements['processing_blocks_list'][0]]
+            p.iterator_replacements['global_fine_blocks_list'] = [p.iterator_replacements['global_fine_blocks_list'][0]]
+            p.iterator_replacements['global_coarse_blocks_list'] = [p.iterator_replacements['global_coarse_blocks_list'][0]]
+            p.iterator_replacements['global_processing_blocks_list'] = [p.iterator_replacements['global_processing_blocks_list'][0]]
+            p.iterator_replacements['cur_dir_parent_dir'] = [p.iterator_replacements['cur_dir_parent_dir'][0]]
 
 
 def allocation(passed_p=None):
@@ -1814,521 +1816,521 @@ def allocation(passed_p=None):
         p = passed_p
 
     start = time.time()
+    if p.run_this:
+        # Set where CHUNK-specific maps will be saved.
+        p.initial_lulc_baseline_path = os.path.join(p.cur_dir, 'lulc_' + p.lulc_simplification_label + '_baseline_' + p.model_label + '_' + str(p.key_base_year) + '.tif')
 
-    # Set where CHUNK-specific maps will be saved.
-    p.initial_lulc_baseline_path = os.path.join(p.cur_dir, 'lulc_' + p.lulc_simplification_label + '_baseline_' + p.model_label + '_' + str(p.key_base_year) + '.tif')
+        # p.lulc_baseline_path = os.path.join(p.cur_dir, 'lulc_baseline.tif')
+        p.zone_esa_simplified_lulc_base_year_path = os.path.join(p.cur_dir, 'zone_esa_' + p.lulc_simplification_label + '_lulc_base_year.tif')
+        p.fine_match_path = p.initial_lulc_baseline_path
+        p.lulc_ndv = hb.get_ndv_from_path(p.aoi_lulc_simplified_paths[p.key_base_year])
 
-    # p.lulc_baseline_path = os.path.join(p.cur_dir, 'lulc_baseline.tif')
-    p.zone_esa_simplified_lulc_base_year_path = os.path.join(p.cur_dir, 'zone_esa_' + p.lulc_simplification_label + '_lulc_base_year.tif')
-    p.fine_match_path = p.initial_lulc_baseline_path
-    p.lulc_ndv = hb.get_ndv_from_path(p.aoi_lulc_simplified_paths[p.key_base_year])
+        p.loss_function_sigma = np.float64(7.0) # Set how much closeness vs farness matters in assessing accuracy. Sigma = 1 means you need to be REALLY close to count as a food prediction.
 
-    p.loss_function_sigma = np.float64(7.0) # Set how much closeness vs farness matters in assessing accuracy. Sigma = 1 means you need to be REALLY close to count as a food prediction.
-
-    # Load the coefficients as DF from either calibration dir or a prebuilt dir.
-    zone_string = os.path.split(p.cur_dir_parent_dir)[1]
-    if p.calibration_parameters_source == 'calibration_task':
-        current_pretrained_coefficients_path = os.path.join(p.calibration_dir, zone_string, 'calibration_zones', 'trained_coefficients_zone_' + zone_string + '.csv')
-        hb.log('Setting current_pretrained_coefficients_path to one generated for zone ' + str(zone_string) + ' at  ' + current_pretrained_coefficients_path)
-        spatial_regressors_df = pd.read_csv(current_pretrained_coefficients_path)
-
-        if len(p.calibration_parameters_override_dict) > 0:
-            try:
-                current_override_path = p.calibration_parameters_override_dict[p.current_scenario_pairing_label][p.current_year][p.current_policy_scenario_label]
-            except:
-                raise NameError('Unable to find override for this scenario.')
-
-
-            raise NameError('NYI for calibration_task')
-
-        spatial_regressors_used_for_this_tile_file_root = 'trained_coefficients_'+p.current_scenario_pairing_label+'_'+str(p.current_year)+'_'+p.current_policy_scenario_label+'_'+p.current_policy_scenario_label
-        spatial_regressors_used_for_this_tile_path = os.path.join(p.cur_dir, spatial_regressors_used_for_this_tile_file_root + '.csv')
-        spatial_regressors_df.to_csv(spatial_regressors_used_for_this_tile_path)
-
-    elif len(p.combined_calibration_parameters_df):
-        if 'calibration_block_index' in p.combined_calibration_parameters_df.columns: # Then it is the global source we pull from
-            current_calibration_block_index = zone_string + '_1_1'
-            p.calibrated_parameters_df = p.combined_calibration_parameters_df[p.combined_calibration_parameters_df['calibration_block_index'] == current_calibration_block_index]
-            spatial_regressors_df = p.calibrated_parameters_df
-            # spatial_regressors_df = p.calibrated_parameters_df.drop(columns=['data_location'])
-            # p.calibrated_parameters_df = p.calibrated_parameters_df.drop(columns=['data_location'])
-            # p.calibrated_parameters_df['merge_col'] = p.calibrated_parameters_df['spatial_regressor_name']
-        else:
-            current_calibration_block_index = 'from_input'
-            spatial_regressors_df = p.combined_calibration_parameters_df
-            # p.calibrated_parameters_df = p.combined_calibration_parameters_df
-
-        # Check if there is a suitable training tile. IF not, use default.
-        # if p.calibrated_parameters_df['type'].isnull().values.any() or len(a) == 0: # NOTE: This is an optimized way to check if there's a nan in an array
-        # # if np.isnan(np.sum(p.calibrated_parameters_df['type'].values)): # NOTE: This is an optimized way to check if there's a nan in an array
-        #     p.calibrated_parameters_df = pd.read_csv(p.local_data_regressors_starting_values_path)
-        #     p.calibrated_parameters_df['calibration_block_index'] = p.calibrated_parameters_df.shape[0] * [current_calibration_block_index]
-
-
-        # #### OLD But possibly relevant after I redo the global calibration.
-        # # Merge in local filenames
-        # p.local_data_paths_df = pd.read_csv(p.local_data_regressors_starting_values_path)
-        # p.local_data_paths_df = p.local_data_paths_df[['spatial_regressor_name', 'data_location']]
-        # # p.local_data_paths_df['merge_col'] = p.local_data_paths_df['spatial_regressor_name']
-
-
-        # spatial_regressors_df = hb.df_merge(p.calibrated_parameters_df, p.local_data_paths_df, left_on='spatial_regressor_name', right_on='spatial_regressor_name')
-        # # spatial_regressors_df = pd.merge(p.calibrated_parameters_df, p.local_data_paths_df, on='merge_col')
-        # if 'calibration_block_index' in spatial_regressors_df.columns:
-        #     first_cols = ['calibration_block_index', 'spatial_regressor_name', 'type', 'data_location']
-        # else:
-        #     first_cols = ['spatial_regressor_name', 'type', 'data_location']
-
-        # ordered_cols = first_cols + [i for i in spatial_regressors_df.columns if i not in first_cols and 'Unnamed' not in i]
-
-
-        # spatial_regressors_df = spatial_regressors_df[ordered_cols]
-
-        # # Replace year specific things with the current year
-        # # TODOO Fix this hack by having the information in the spreadsheets be programatically generated per year via a function (like how it is done for the local_csv path but specific to this year).
-        # spatial_regressors_df['data_location'] = spatial_regressors_df['data_location'].str.replace('2000', '2015')
-
-
-        if len(p.calibration_parameters_override_dict) > 0:
-
-            try:
-                current_override_path = p.calibration_parameters_override_dict[p.current_scenario_pairing_label][p.current_year][p.current_policy_scenario_label]
-                has_override = True
-            except:
-                hb.debug('Unable to find override for this scenario.')
-                has_override = False
-
-
-            if has_override:
-                left_df = spatial_regressors_df
-                # left_df = spatial_regressors_df[[i for i in spatial_regressors_df.columns if i not in ['class_' + j for j in p.class_labels]]]
-                right_df = pd.read_csv(current_override_path)
-                join_col = 'spatial_regressor_name'
-                rename_dict ={i: i + '_right' for i in right_df.columns if i != join_col}
-                right_df = right_df.rename(columns=rename_dict)
-                spatial_regressors_df = hb.df_merge(left_df, right_df, left_on=join_col, right_on=join_col, verbose=False, supress_warnings=True)
-
-                for column_label in spatial_regressors_df.columns:
-                    if column_label[-6:] != '_right': # HACK
-                        if column_label + '_right' in spatial_regressors_df.columns:
-
-                            new_col = np.where(pd.isnull(spatial_regressors_df[column_label + '_right']), spatial_regressors_df[column_label], spatial_regressors_df[column_label + '_right'])
-                            spatial_regressors_df[column_label] = new_col
-                            # spatial_regressors_df[column_label].values = np.where(not np.isnan(spatial_regressors_df[column_label + '_right'].values), spatial_regressors_df[column_label + '_right'].values, spatial_regressors_df[column_label].values)
-                to_drop = []
-                for i in spatial_regressors_df.columns:
-                    if i[-6:] == '_right':
-                        to_drop.append(i)
-
-                spatial_regressors_df = spatial_regressors_df[[i for i in spatial_regressors_df.columns if i not in to_drop]]
-
-        try:
-            current_calibration_block_index
-        except:
-            current_calibration_block_index = 'here'
-
-        spatial_regressors_used_for_this_tile_file_root = 'trained_coefficients_'+current_calibration_block_index
-        spatial_regressors_used_for_this_tile_path = os.path.join(p.cur_dir, spatial_regressors_used_for_this_tile_file_root + '.csv')
-
-        spatial_regressors_df.to_csv(spatial_regressors_used_for_this_tile_path, index=False)
-    else:
-        raise NameError('calibration_parameters_source doesnt make sense.')
-
-
-    if p.use_calibration_created_coefficients:
-        if p.use_calibration_from_zone_centroid_tile:
-            # OLD NOTE: calibration_zone_polygons_path points to the correct GTAP37_AEZ18 gpkg. Rasterize it to create coarse-tile to AZREG correspondence then calculate centroids.
-            p.calibration_zone_polygons_path
-            zone_string = os.path.split(p.cur_dir_parent_dir)[1]
+        # Load the coefficients as DF from either calibration dir or a prebuilt dir.
+        zone_string = os.path.split(p.cur_dir_parent_dir)[1]
+        if p.calibration_parameters_source == 'calibration_task':
             current_pretrained_coefficients_path = os.path.join(p.calibration_dir, zone_string, 'calibration_zones', 'trained_coefficients_zone_' + zone_string + '.csv')
-            hb.log('Setting current_pretrained_coefficients_path to one generated for zone ' + str(zone_string)  + ' at  ' + current_pretrained_coefficients_path)
+            hb.log('Setting current_pretrained_coefficients_path to one generated for zone ' + str(zone_string) + ' at  ' + current_pretrained_coefficients_path)
+            spatial_regressors_df = pd.read_csv(current_pretrained_coefficients_path)
 
+            if len(p.calibration_parameters_override_dict) > 0:
+                try:
+                    current_override_path = p.calibration_parameters_override_dict[p.current_scenario_pairing_label][p.current_year][p.current_policy_scenario_label]
+                except:
+                    raise NameError('Unable to find override for this scenario.')
+
+
+                raise NameError('NYI for calibration_task')
+
+            spatial_regressors_used_for_this_tile_file_root = 'trained_coefficients_'+p.current_scenario_pairing_label+'_'+str(p.current_year)+'_'+p.current_policy_scenario_label+'_'+p.current_policy_scenario_label
+            spatial_regressors_used_for_this_tile_path = os.path.join(p.cur_dir, spatial_regressors_used_for_this_tile_file_root + '.csv')
+            spatial_regressors_df.to_csv(spatial_regressors_used_for_this_tile_path)
+
+        elif len(p.combined_calibration_parameters_df):
+            if 'calibration_block_index' in p.combined_calibration_parameters_df.columns: # Then it is the global source we pull from
+                current_calibration_block_index = zone_string + '_1_1'
+                p.calibrated_parameters_df = p.combined_calibration_parameters_df[p.combined_calibration_parameters_df['calibration_block_index'] == current_calibration_block_index]
+                spatial_regressors_df = p.calibrated_parameters_df
+                # spatial_regressors_df = p.calibrated_parameters_df.drop(columns=['data_location'])
+                # p.calibrated_parameters_df = p.calibrated_parameters_df.drop(columns=['data_location'])
+                # p.calibrated_parameters_df['merge_col'] = p.calibrated_parameters_df['spatial_regressor_name']
+            else:
+                current_calibration_block_index = 'from_input'
+                spatial_regressors_df = p.combined_calibration_parameters_df
+                # p.calibrated_parameters_df = p.combined_calibration_parameters_df
+
+            # Check if there is a suitable training tile. IF not, use default.
+            # if p.calibrated_parameters_df['type'].isnull().values.any() or len(a) == 0: # NOTE: This is an optimized way to check if there's a nan in an array
+            # # if np.isnan(np.sum(p.calibrated_parameters_df['type'].values)): # NOTE: This is an optimized way to check if there's a nan in an array
+            #     p.calibrated_parameters_df = pd.read_csv(p.local_data_regressors_starting_values_path)
+            #     p.calibrated_parameters_df['calibration_block_index'] = p.calibrated_parameters_df.shape[0] * [current_calibration_block_index]
+
+
+            # #### OLD But possibly relevant after I redo the global calibration.
+            # # Merge in local filenames
+            # p.local_data_paths_df = pd.read_csv(p.local_data_regressors_starting_values_path)
+            # p.local_data_paths_df = p.local_data_paths_df[['spatial_regressor_name', 'data_location']]
+            # # p.local_data_paths_df['merge_col'] = p.local_data_paths_df['spatial_regressor_name']
+
+
+            # spatial_regressors_df = hb.df_merge(p.calibrated_parameters_df, p.local_data_paths_df, left_on='spatial_regressor_name', right_on='spatial_regressor_name')
+            # # spatial_regressors_df = pd.merge(p.calibrated_parameters_df, p.local_data_paths_df, on='merge_col')
+            # if 'calibration_block_index' in spatial_regressors_df.columns:
+            #     first_cols = ['calibration_block_index', 'spatial_regressor_name', 'type', 'data_location']
+            # else:
+            #     first_cols = ['spatial_regressor_name', 'type', 'data_location']
+
+            # ordered_cols = first_cols + [i for i in spatial_regressors_df.columns if i not in first_cols and 'Unnamed' not in i]
+
+
+            # spatial_regressors_df = spatial_regressors_df[ordered_cols]
+
+            # # Replace year specific things with the current year
+            # # TODOO Fix this hack by having the information in the spreadsheets be programatically generated per year via a function (like how it is done for the local_csv path but specific to this year).
+            # spatial_regressors_df['data_location'] = spatial_regressors_df['data_location'].str.replace('2000', '2015')
+
+
+            if len(p.calibration_parameters_override_dict) > 0:
+
+                try:
+                    current_override_path = p.calibration_parameters_override_dict[p.current_scenario_pairing_label][p.current_year][p.current_policy_scenario_label]
+                    has_override = True
+                except:
+                    hb.debug('Unable to find override for this scenario.')
+                    has_override = False
+
+
+                if has_override:
+                    left_df = spatial_regressors_df
+                    # left_df = spatial_regressors_df[[i for i in spatial_regressors_df.columns if i not in ['class_' + j for j in p.class_labels]]]
+                    right_df = pd.read_csv(current_override_path)
+                    join_col = 'spatial_regressor_name'
+                    rename_dict ={i: i + '_right' for i in right_df.columns if i != join_col}
+                    right_df = right_df.rename(columns=rename_dict)
+                    spatial_regressors_df = hb.df_merge(left_df, right_df, left_on=join_col, right_on=join_col, verbose=False, supress_warnings=True)
+
+                    for column_label in spatial_regressors_df.columns:
+                        if column_label[-6:] != '_right': # HACK
+                            if column_label + '_right' in spatial_regressors_df.columns:
+
+                                new_col = np.where(pd.isnull(spatial_regressors_df[column_label + '_right']), spatial_regressors_df[column_label], spatial_regressors_df[column_label + '_right'])
+                                spatial_regressors_df[column_label] = new_col
+                                # spatial_regressors_df[column_label].values = np.where(not np.isnan(spatial_regressors_df[column_label + '_right'].values), spatial_regressors_df[column_label + '_right'].values, spatial_regressors_df[column_label].values)
+                    to_drop = []
+                    for i in spatial_regressors_df.columns:
+                        if i[-6:] == '_right':
+                            to_drop.append(i)
+
+                    spatial_regressors_df = spatial_regressors_df[[i for i in spatial_regressors_df.columns if i not in to_drop]]
+
+            try:
+                current_calibration_block_index
+            except:
+                current_calibration_block_index = 'here'
+
+            spatial_regressors_used_for_this_tile_file_root = 'trained_coefficients_'+current_calibration_block_index
+            spatial_regressors_used_for_this_tile_path = os.path.join(p.cur_dir, spatial_regressors_used_for_this_tile_file_root + '.csv')
+
+            spatial_regressors_df.to_csv(spatial_regressors_used_for_this_tile_path, index=False)
         else:
-
-            zone_string = os.path.split(p.cur_dir_parent_dir)[1]
-            current_pretrained_coefficients_path = os.path.join(p.calibration_dir, zone_string, 'calibration_zones', 'trained_coefficients_zone_' + zone_string + '.csv')
-            hb.log('Setting current_pretrained_coefficients_path to one generated in this project, at ' + current_pretrained_coefficients_path)
-    else:
-        current_pretrained_coefficients_path = p.calibration_parameters_source
-                # current_pretrained_coefficients_path = p.pretrained_coefficients_path_dict[p.current_scenario_pairing_label][p.current_year][p.current_policy_scenario_label]
-        hb.log('Setting current_pretrained_coefficients_path to one specified in run configuration, at ' + current_pretrained_coefficients_path)
+            raise NameError('calibration_parameters_source doesnt make sense.')
 
 
+        if p.use_calibration_created_coefficients:
+            if p.use_calibration_from_zone_centroid_tile:
+                # OLD NOTE: calibration_zone_polygons_path points to the correct GTAP37_AEZ18 gpkg. Rasterize it to create coarse-tile to AZREG correspondence then calculate centroids.
+                p.calibration_zone_polygons_path
+                zone_string = os.path.split(p.cur_dir_parent_dir)[1]
+                current_pretrained_coefficients_path = os.path.join(p.calibration_dir, zone_string, 'calibration_zones', 'trained_coefficients_zone_' + zone_string + '.csv')
+                hb.log('Setting current_pretrained_coefficients_path to one generated for zone ' + str(zone_string)  + ' at  ' + current_pretrained_coefficients_path)
 
-    changing_class_indices_array = np.asarray(p.changing_class_indices, dtype=np.int64)  # For Cythonization, load these as the "labels", which is used for writing.
+            else:
 
-
-    lulc_projected_path = os.path.join(p.cur_dir, 'lulc_' + p.lulc_src_label + '_'  + p.lulc_simplification_label + '_' + p.exogenous_label + '_' + p.climate_label + '_' + p.model_label + '_' + p.counterfactual_label + '_' + str(p.year) + '.tif')
-
-    if p.skip_created_downscaling_zones:
-        skip_this_zone = os.path.exists(lulc_projected_path)
-    else:
-        skip_this_zone = False
-
-    if p.run_this and not skip_this_zone:
-
-        # Tricky logic here: I implemented an optimization that skips doing zones that have no change. But this means
-        # that the previous year lulc will not always be there. The logic below finds the most recent LULC map that
-        # exists, reverting to the key_base_year if needed.
-        previous_year_dir = p.cur_dir.replace('\\', '/').replace('/' + str(p.year) + '/', '/' + str(p.previous_year) + '/')
-        if p.previous_year in p.lulc_simplified_paths: # Then it is the base year
-
-            # On the first year, we need to clip from the AOI-wide LULC to the current processing tile.
-            aoi_previous_year_path = p.lulc_simplified_paths[p.previous_year]
-
-            # HACK IUCN. This can only be dealt with by fixing/eliminating the lulc_simplified_paths[] dicts
-            if 'restoration' in p.scenario_label:
-                clipped_path = os.path.join(p.cur_dir, 'base_lulc.tif')
-                hb.clip_raster_by_bb(p.base_year_lulc_path, p.bb, clipped_path)
-                aoi_previous_year_path = clipped_path
-                # still need to clip tho
-
-
-
-            tile_starting_lulc_path = os.path.join(p.cur_dir, 'lulc_' + p.lulc_src_label + '_' + p.lulc_simplification_label + '_' + p.model_label + '_' + str(p.key_base_year) + '.tif')
-
-
-
-            lulc_baseline_array = hb.load_geotiff_chunk_by_cr_size(aoi_previous_year_path, p.fine_blocks_list, output_path=tile_starting_lulc_path).astype(np.int64)
-            tile_match_path = tile_starting_lulc_path
+                zone_string = os.path.split(p.cur_dir_parent_dir)[1]
+                current_pretrained_coefficients_path = os.path.join(p.calibration_dir, zone_string, 'calibration_zones', 'trained_coefficients_zone_' + zone_string + '.csv')
+                hb.log('Setting current_pretrained_coefficients_path to one generated in this project, at ' + current_pretrained_coefficients_path)
         else:
+            current_pretrained_coefficients_path = p.calibration_parameters_source
+                    # current_pretrained_coefficients_path = p.pretrained_coefficients_path_dict[p.current_scenario_pairing_label][p.current_year][p.current_policy_scenario_label]
+            hb.log('Setting current_pretrained_coefficients_path to one specified in run configuration, at ' + current_pretrained_coefficients_path)
 
-            # On not-first years, we need to reference the previous year's and only write it if writing_level is sufficiently high.
-            previous_year_filename = 'lulc_' + p.lulc_src_label + '_' + p.lulc_simplification_label + '_' + p.exogenous_label + '_' + p.climate_label + '_' + p.model_label + '_' + p.counterfactual_label + '_' + str(p.previous_year) + '.tif'
-            tile_starting_lulc_path = os.path.join(previous_year_dir, previous_year_filename)
 
-            # If the previous year didnt change, then there wont be a file there. In that case, we search for the previous year that DID change.
-            if not hb.path_exists(tile_starting_lulc_path):
-                found_it = False
-                reversed_years = p.years.copy()
-                reversed_years.reverse()
 
-                for test_year in reversed_years:
-                    test_year_dir = p.cur_dir.replace('\\', '/').replace('/' + str(p.year) + '/', '/' + str(test_year) + '/')
-                    test_year_filename = 'lulc_' + p.lulc_src_label + '_' + p.lulc_simplification_label + '_' + p.exogenous_label + '_' + p.climate_label + '_' + p.model_label + '_' + p.counterfactual_label + '_' + str(test_year) + '.tif'
-                    try_path = os.path.join(test_year_dir, test_year_filename)
-                    if hb.path_exists(try_path):
-                        tile_starting_lulc_path = try_path
-                        found_it = True
-                        break
-                # if you still cant find it, just use the starting year
-                if not found_it:
-                    # Tricky: Note that it looks for it now in the first NON BASE YEAR, cause that's the only one i save it in.
-                    test_year_dir = p.cur_dir.replace('\\', '/').replace('/' + str(p.year) + '/', '/' + str(p.years[0]) + '/')
-                    tile_starting_lulc_path = os.path.join(test_year_dir, 'lulc_' + p.lulc_src_label + '_' + p.lulc_simplification_label + '_' + p.model_label + '_' + str(p.key_base_year) + '.tif')
-                    if hb.path_exists(tile_starting_lulc_path):
-                        found_it = True
+        changing_class_indices_array = np.asarray(p.changing_class_indices, dtype=np.int64)  # For Cythonization, load these as the "labels", which is used for writing.
 
-                if not found_it:
 
-                    tile_starting_lulc_path = 6
+        lulc_projected_path = os.path.join(p.cur_dir, 'lulc_' + p.lulc_src_label + '_'  + p.lulc_simplification_label + '_' + p.exogenous_label + '_' + p.climate_label + '_' + p.model_label + '_' + p.counterfactual_label + '_' + str(p.year) + '.tif')
 
-                    aoi_previous_year_path = p.lulc_simplified_paths[p.key_base_year]
-                    tile_starting_lulc_path = os.path.join(p.cur_dir, 'lulc_' + p.lulc_src_label + '_' + p.lulc_simplification_label + '_' + p.model_label + '_' + str(p.key_base_year) + '.tif')
-                    lulc_baseline_array = hb.load_geotiff_chunk_by_cr_size(aoi_previous_year_path, p.fine_blocks_list, output_path=tile_starting_lulc_path).astype(np.int64)
-                    tile_match_path = tile_starting_lulc_path
+        if p.skip_created_downscaling_zones:
+            skip_this_zone = os.path.exists(lulc_projected_path)
+        else:
+            skip_this_zone = False
 
-            lulc_baseline_array = hb.as_array(tile_starting_lulc_path).astype(np.int64)
-            tile_match_path = tile_starting_lulc_path
-            if p.output_writing_level > 1:
+        if p.run_this and not skip_this_zone:
+
+            # Tricky logic here: I implemented an optimization that skips doing zones that have no change. But this means
+            # that the previous year lulc will not always be there. The logic below finds the most recent LULC map that
+            # exists, reverting to the key_base_year if needed.
+            previous_year_dir = p.cur_dir.replace('\\', '/').replace('/' + str(p.year) + '/', '/' + str(p.previous_year) + '/')
+            if p.previous_year in p.lulc_simplified_paths: # Then it is the base year
+
+                # On the first year, we need to clip from the AOI-wide LULC to the current processing tile.
+                aoi_previous_year_path = p.lulc_simplified_paths[p.previous_year]
+
+                # HACK IUCN. This can only be dealt with by fixing/eliminating the lulc_simplified_paths[] dicts
+                if 'restoration' in p.scenario_label:
+                    clipped_path = os.path.join(p.cur_dir, 'base_lulc.tif')
+                    hb.clip_raster_by_bb(p.base_year_lulc_path, p.bb, clipped_path)
+                    aoi_previous_year_path = clipped_path
+                    # still need to clip tho
+
+
+
+                tile_starting_lulc_path = os.path.join(p.cur_dir, 'lulc_' + p.lulc_src_label + '_' + p.lulc_simplification_label + '_' + p.model_label + '_' + str(p.key_base_year) + '.tif')
+
+
+
+                lulc_baseline_array = hb.load_geotiff_chunk_by_cr_size(aoi_previous_year_path, p.fine_blocks_list, output_path=tile_starting_lulc_path).astype(np.int64)
+                tile_match_path = tile_starting_lulc_path
+            else:
+
+                # On not-first years, we need to reference the previous year's and only write it if writing_level is sufficiently high.
+                previous_year_filename = 'lulc_' + p.lulc_src_label + '_' + p.lulc_simplification_label + '_' + p.exogenous_label + '_' + p.climate_label + '_' + p.model_label + '_' + p.counterfactual_label + '_' + str(p.previous_year) + '.tif'
+                tile_starting_lulc_path = os.path.join(previous_year_dir, previous_year_filename)
+
+                # If the previous year didnt change, then there wont be a file there. In that case, we search for the previous year that DID change.
                 if not hb.path_exists(tile_starting_lulc_path):
-                    hb.save_array_as_geotiff(lulc_baseline_array, tile_starting_lulc_path, tile_match_path, ndv=p.lulc_ndv, compress=True)
+                    found_it = False
+                    reversed_years = p.years.copy()
+                    reversed_years.reverse()
+
+                    for test_year in reversed_years:
+                        test_year_dir = p.cur_dir.replace('\\', '/').replace('/' + str(p.year) + '/', '/' + str(test_year) + '/')
+                        test_year_filename = 'lulc_' + p.lulc_src_label + '_' + p.lulc_simplification_label + '_' + p.exogenous_label + '_' + p.climate_label + '_' + p.model_label + '_' + p.counterfactual_label + '_' + str(test_year) + '.tif'
+                        try_path = os.path.join(test_year_dir, test_year_filename)
+                        if hb.path_exists(try_path):
+                            tile_starting_lulc_path = try_path
+                            found_it = True
+                            break
+                    # if you still cant find it, just use the starting year
+                    if not found_it:
+                        # Tricky: Note that it looks for it now in the first NON BASE YEAR, cause that's the only one i save it in.
+                        test_year_dir = p.cur_dir.replace('\\', '/').replace('/' + str(p.year) + '/', '/' + str(p.years[0]) + '/')
+                        tile_starting_lulc_path = os.path.join(test_year_dir, 'lulc_' + p.lulc_src_label + '_' + p.lulc_simplification_label + '_' + p.model_label + '_' + str(p.key_base_year) + '.tif')
+                        if hb.path_exists(tile_starting_lulc_path):
+                            found_it = True
+
+                    if not found_it:
+
+                        tile_starting_lulc_path = 6
+
+                        aoi_previous_year_path = p.lulc_simplified_paths[p.key_base_year]
+                        tile_starting_lulc_path = os.path.join(p.cur_dir, 'lulc_' + p.lulc_src_label + '_' + p.lulc_simplification_label + '_' + p.model_label + '_' + str(p.key_base_year) + '.tif')
+                        lulc_baseline_array = hb.load_geotiff_chunk_by_cr_size(aoi_previous_year_path, p.fine_blocks_list, output_path=tile_starting_lulc_path).astype(np.int64)
+                        tile_match_path = tile_starting_lulc_path
+
+                lulc_baseline_array = hb.as_array(tile_starting_lulc_path).astype(np.int64)
+                tile_match_path = tile_starting_lulc_path
+                if p.output_writing_level > 1:
+                    if not hb.path_exists(tile_starting_lulc_path):
+                        hb.save_array_as_geotiff(lulc_baseline_array, tile_starting_lulc_path, tile_match_path, ndv=p.lulc_ndv, compress=True)
 
 
 
 
-        spatial_layer_names = spatial_regressors_df['spatial_regressor_name'].dropna().values
-        spatial_layer_paths = spatial_regressors_df['data_location'].dropna().values
-        spatial_layer_types = spatial_regressors_df['type'].dropna().values
+            spatial_layer_names = spatial_regressors_df['spatial_regressor_name'].dropna().values
+            spatial_layer_paths = spatial_regressors_df['data_location'].dropna().values
+            spatial_layer_types = spatial_regressors_df['type'].dropna().values
 
 
 
-        # QUIRCK, adjacency is really just additive with preprocessing.
-        spatial_layer_types_to_codes = {'multiplicative': 1,
-                                        'additive': 2,
-                                        }
-        spatial_layer_types_to_codes.update({'gaussian_' + str(sigma): 2 for sigma in p.gaussian_sigmas_to_test})
+            # QUIRCK, adjacency is really just additive with preprocessing.
+            spatial_layer_types_to_codes = {'multiplicative': 1,
+                                            'additive': 2,
+                                            }
+            spatial_layer_types_to_codes.update({'gaussian_' + str(sigma): 2 for sigma in p.gaussian_sigmas_to_test})
 
-        spatial_layer_function_types_1d = np.asarray([spatial_layer_types_to_codes[i] for i in spatial_layer_types], np.int64)
+            spatial_layer_function_types_1d = np.asarray([spatial_layer_types_to_codes[i] for i in spatial_layer_types], np.int64)
 
-        # # CREATE GAUSSIANS for all variables tagged as that type. Note this is a large performance loss and I use precached global convolutions in all cases to date.
-        # p.spatial_layer_chunk_paths = []
-        # for c, path in enumerate(spatial_layer_paths):
-        #     if spatial_regressors_df['type'].values[c][0:8] == 'gaussian':
-        #         _, class_id, _, sigma = spatial_regressors_df['spatial_regressor_name'].values[c].split('_')
-        #         filename = os.path.split(path)[1]
-        #         spatial_chunk_path = os.path.join(p.cur_dir, os.path.split(spatial_regressors_df['data_location'].values[c])[1])
-        #         if not os.path.exists(spatial_chunk_path):
-        #             hb.load_geotiff_chunk_by_cr_size(path, p.fine_blocks_list, output_path=spatial_chunk_path)
-        #         p.spatial_layer_chunk_paths.append(spatial_chunk_path)
-        #
-        # spatial_layer_chunk_counter = 0
-        # for c, class_label in enumerate(spatial_regressors_df['spatial_regressor_name'].values):
-        #     if spatial_regressors_df['type'].values[c][0:8] == 'gaussian':
-        #         _, class_id, _, sigma = class_label.split('_')
-        #
-        #         kernel_path = os.path.join(p.generated_kernels_dir, 'gaussian_' + str(sigma) + '.tif')
-        #         output_path = os.path.join(p.cur_dir, class_label + '_convolution.tif')
-        #
-        #         # NOTE, fft_gaussian has to write to disk
-        #         if not os.path.exists(output_path):
-        #             seals_utils.fft_gaussian(p.spatial_layer_chunk_paths[spatial_layer_chunk_counter], kernel_path, output_path, -9999.0, True)
-        #
-        #         spatial_layer_chunk_counter += 1
+            # # CREATE GAUSSIANS for all variables tagged as that type. Note this is a large performance loss and I use precached global convolutions in all cases to date.
+            # p.spatial_layer_chunk_paths = []
+            # for c, path in enumerate(spatial_layer_paths):
+            #     if spatial_regressors_df['type'].values[c][0:8] == 'gaussian':
+            #         _, class_id, _, sigma = spatial_regressors_df['spatial_regressor_name'].values[c].split('_')
+            #         filename = os.path.split(path)[1]
+            #         spatial_chunk_path = os.path.join(p.cur_dir, os.path.split(spatial_regressors_df['data_location'].values[c])[1])
+            #         if not os.path.exists(spatial_chunk_path):
+            #             hb.load_geotiff_chunk_by_cr_size(path, p.fine_blocks_list, output_path=spatial_chunk_path)
+            #         p.spatial_layer_chunk_paths.append(spatial_chunk_path)
+            #
+            # spatial_layer_chunk_counter = 0
+            # for c, class_label in enumerate(spatial_regressors_df['spatial_regressor_name'].values):
+            #     if spatial_regressors_df['type'].values[c][0:8] == 'gaussian':
+            #         _, class_id, _, sigma = class_label.split('_')
+            #
+            #         kernel_path = os.path.join(p.generated_kernels_dir, 'gaussian_' + str(sigma) + '.tif')
+            #         output_path = os.path.join(p.cur_dir, class_label + '_convolution.tif')
+            #
+            #         # NOTE, fft_gaussian has to write to disk
+            #         if not os.path.exists(output_path):
+            #             seals_utils.fft_gaussian(p.spatial_layer_chunk_paths[spatial_layer_chunk_counter], kernel_path, output_path, -9999.0, True)
+            #
+            #         spatial_layer_chunk_counter += 1
 
-        n_c, n_r = int(p.fine_blocks_list[2]), int(p.fine_blocks_list[3])
-        coarse_n_c, coarse_n_r = int(p.coarse_blocks_list[2]), int(p.coarse_blocks_list[3])
+            n_c, n_r = int(p.fine_blocks_list[2]), int(p.fine_blocks_list[3])
+            coarse_n_c, coarse_n_r = int(p.coarse_blocks_list[2]), int(p.coarse_blocks_list[3])
 
-        # Load things that dont ever change over generations or final run
-        block_ha_per_cell_fine_path = os.path.join(p.cur_dir, 'block_ha_per_cell_fine.tif')
-        block_ha_per_cell_coarse_path = os.path.join(p.cur_dir, 'block_ha_per_cell_coarse.tif')
+            # Load things that dont ever change over generations or final run
+            block_ha_per_cell_fine_path = os.path.join(p.cur_dir, 'block_ha_per_cell_fine.tif')
+            block_ha_per_cell_coarse_path = os.path.join(p.cur_dir, 'block_ha_per_cell_coarse.tif')
 
-        # This has to be written to a file so that it can define the aoi of the coarse grid. I could optimize this as
-        # it creates n-zones number of bloat files. Don't need fine file because that georeference we can
-        # get from the baseline lulc.
-        hectares_per_grid_coarse_cell = hb.load_geotiff_chunk_by_cr_size(p.aoi_ha_per_cell_coarse_path, p.coarse_blocks_list, output_path=block_ha_per_cell_coarse_path).astype(np.float64)
+            # This has to be written to a file so that it can define the aoi of the coarse grid. I could optimize this as
+            # it creates n-zones number of bloat files. Don't need fine file because that georeference we can
+            # get from the baseline lulc.
+            hectares_per_grid_coarse_cell = hb.load_geotiff_chunk_by_cr_size(p.aoi_ha_per_cell_coarse_path, p.coarse_blocks_list, output_path=block_ha_per_cell_coarse_path).astype(np.float64)
 
-        if p.output_writing_level > 5:
-            hectares_per_grid_cell = hb.load_geotiff_chunk_by_cr_size(p.aoi_ha_per_cell_fine_path, p.fine_blocks_list, output_path=block_ha_per_cell_fine_path).astype(np.float64)
-        else:
-            hectares_per_grid_cell = hb.load_geotiff_chunk_by_cr_size(p.aoi_ha_per_cell_fine_path, p.fine_blocks_list).astype(np.float64)
-
-        # IMPORTANT NOTE CAVEAT: Although the final allocation does properly start from the 2015 lulc, the underlying ranking is still based on the 2000 class binaries.
-        # Figure out a way to make the spatial_layers_3d smartly update the "new state" variables in a way that is forward looking for year-by-year iteration
-
-        # Build the numpy array for spatial layers.
-        spatial_layers_3d = np.zeros((len(spatial_layer_paths), n_r, n_c)).astype(np.float64)
-
-        # Chose not to normalize anything.
-        normalize_inputs = False
-        # Add either the normalized or not normalized array to the spatial_layers_3d
-        for c, path in enumerate(spatial_layer_paths):
-            hb.debug('Loading spatial layer at path ' + path)
-
-            # path = hb.get_first_extant_path(path, [p.fine_processed_inputs_dir, p.input_dir, p.base_data_dir])
-            # if 'binary_esa_seals7_2015_urban' in path:
-            #     pass
-
-            # if 'soil_organic_content' in path:
-            #     pass
-
-            # PROBLEM Sometimes it NEEDS to look in fine_processed_inputs_dir, but other times it needs to download it no matter what. how deal with this?
-            # Am I possibly using get_path to deal with THREE types of data
-            # 1. Data that needs to be created
-            # 2. Data that needs t be put in base_data_dir
-            # I confused....
-            possible_dirs = [p.intermediate_dir, p.fine_processed_inputs_dir, p.input_dir, p.base_data_dir]
-            path = p.get_path(path, possible_dirs=possible_dirs)
-            current_bb = hb.get_bounding_box(path)
-
-            if current_bb == hb.global_bounding_box:
-                correct_fine_block_list = p.global_fine_blocks_list
-                correct_coarse_block_list = p.global_coarse_blocks_list
+            if p.output_writing_level > 5:
+                hectares_per_grid_cell = hb.load_geotiff_chunk_by_cr_size(p.aoi_ha_per_cell_fine_path, p.fine_blocks_list, output_path=block_ha_per_cell_fine_path).astype(np.float64)
             else:
-                correct_fine_block_list = p.fine_blocks_list
-                correct_coarse_block_list = p.coarse_blocks_list
+                hectares_per_grid_cell = hb.load_geotiff_chunk_by_cr_size(p.aoi_ha_per_cell_fine_path, p.fine_blocks_list).astype(np.float64)
 
-            add_randomness = 0 # DECIDED NOT TO DO THIS. Don't try it again. I'm warning you! Increment the following comment up 1 for each unsuccessful attempt at doing this: 3
-            if spatial_layer_types[c] == 'additive' or spatial_layer_types[c] == 'multiplicative':
-                if normalize_inputs is True:
-                    spatial_layers_3d[c] = hb.normalize_array(hb.load_geotiff_chunk_by_cr_size(path, correct_fine_block_list))
+            # IMPORTANT NOTE CAVEAT: Although the final allocation does properly start from the 2015 lulc, the underlying ranking is still based on the 2000 class binaries.
+            # Figure out a way to make the spatial_layers_3d smartly update the "new state" variables in a way that is forward looking for year-by-year iteration
+
+            # Build the numpy array for spatial layers.
+            spatial_layers_3d = np.zeros((len(spatial_layer_paths), n_r, n_c)).astype(np.float64)
+
+            # Chose not to normalize anything.
+            normalize_inputs = False
+            # Add either the normalized or not normalized array to the spatial_layers_3d
+            for c, path in enumerate(spatial_layer_paths):
+                hb.debug('Loading spatial layer at path ' + path)
+
+                # path = hb.get_first_extant_path(path, [p.fine_processed_inputs_dir, p.input_dir, p.base_data_dir])
+                # if 'binary_esa_seals7_2015_urban' in path:
+                #     pass
+
+                # if 'soil_organic_content' in path:
+                #     pass
+
+                # PROBLEM Sometimes it NEEDS to look in fine_processed_inputs_dir, but other times it needs to download it no matter what. how deal with this?
+                # Am I possibly using get_path to deal with THREE types of data
+                # 1. Data that needs to be created
+                # 2. Data that needs t be put in base_data_dir
+                # I confused....
+                possible_dirs = [p.intermediate_dir, p.fine_processed_inputs_dir, p.input_dir, p.base_data_dir]
+                path = p.get_path(path, possible_dirs=possible_dirs)
+                current_bb = hb.get_bounding_box(path)
+
+                if current_bb == hb.global_bounding_box:
+                    correct_fine_block_list = p.global_fine_blocks_list
+                    correct_coarse_block_list = p.global_coarse_blocks_list
                 else:
+                    correct_fine_block_list = p.fine_blocks_list
+                    correct_coarse_block_list = p.coarse_blocks_list
 
-                    if add_randomness:
-                        a = hb.load_geotiff_chunk_by_cr_size(path, correct_fine_block_list)
-                        a = a * (1 - (np.random.random(a.shape)/100))
-                        spatial_layers_3d[c] = a
+                add_randomness = 0 # DECIDED NOT TO DO THIS. Don't try it again. I'm warning you! Increment the following comment up 1 for each unsuccessful attempt at doing this: 3
+                if spatial_layer_types[c] == 'additive' or spatial_layer_types[c] == 'multiplicative':
+                    if normalize_inputs is True:
+                        spatial_layers_3d[c] = hb.normalize_array(hb.load_geotiff_chunk_by_cr_size(path, correct_fine_block_list))
                     else:
-                        spatial_layers_3d[c] = hb.load_geotiff_chunk_by_cr_size(path, correct_fine_block_list)
 
-            # NOTE: Currently gaussian is not used as it is just considered additive
-            elif spatial_layer_types[c][0:8] == 'gaussian':
-                # updated_path = os.path.join(p.cur_dir, 'class_' + spatial_layer_names[c].split('_')[1] + '_gaussian_' + spatial_layer_names[c].split('_')[3] + '_convolution.tif')
+                        if add_randomness:
+                            a = hb.load_geotiff_chunk_by_cr_size(path, correct_fine_block_list)
+                            a = a * (1 - (np.random.random(a.shape)/100))
+                            spatial_layers_3d[c] = a
+                        else:
+                            spatial_layers_3d[c] = hb.load_geotiff_chunk_by_cr_size(path, correct_fine_block_list)
 
-                if normalize_inputs is True:
-                    spatial_layers_3d[c] = hb.normalize_array(hb.load_geotiff_chunk_by_cr_size(path, correct_fine_block_list))
-                    # spatial_layers_3d[c] = hb.normalize_array(hb.as_array(updated_path))
-                else:
-                    if add_randomness:
-                        a = hb.load_geotiff_chunk_by_cr_size(path, correct_fine_block_list)
-                        a = a * (1 - (np.random.random(a.shape)/100))
-                        spatial_layers_3d[c] = a
+                # NOTE: Currently gaussian is not used as it is just considered additive
+                elif spatial_layer_types[c][0:8] == 'gaussian':
+                    # updated_path = os.path.join(p.cur_dir, 'class_' + spatial_layer_names[c].split('_')[1] + '_gaussian_' + spatial_layer_names[c].split('_')[3] + '_convolution.tif')
+
+                    if normalize_inputs is True:
+                        spatial_layers_3d[c] = hb.normalize_array(hb.load_geotiff_chunk_by_cr_size(path, correct_fine_block_list))
+                        # spatial_layers_3d[c] = hb.normalize_array(hb.as_array(updated_path))
                     else:
-                        spatial_layers_3d[c] = hb.load_geotiff_chunk_by_cr_size(path, correct_fine_block_list)
+                        if add_randomness:
+                            a = hb.load_geotiff_chunk_by_cr_size(path, correct_fine_block_list)
+                            a = a * (1 - (np.random.random(a.shape)/100))
+                            spatial_layers_3d[c] = a
+                        else:
+                            spatial_layers_3d[c] = hb.load_geotiff_chunk_by_cr_size(path, correct_fine_block_list)
 
-            else:
-                raise NameError('unspecified type')
-
-        if p.base_data_dir in p.lulc_simplified_paths[p.key_base_year]:
-            observed_lulc_array = hb.load_geotiff_chunk_by_cr_size(p.lulc_simplified_paths[p.key_base_year], p.global_fine_blocks_list, output_path=None).astype(np.int64)
-        else:
-            observed_lulc_array = hb.load_geotiff_chunk_by_cr_size(p.lulc_simplified_paths[p.key_base_year], p.fine_blocks_list, output_path=None).astype(np.int64)
-
-
-        valid_mask_array = np.where((observed_lulc_array != p.lulc_ndv), 1, 0).astype(np.int64)
-
-
-        # Set how much change for each class needs to be allocated.
-        projected_coarse_change_3d = np.zeros((len(changing_class_indices_array), coarse_n_r, coarse_n_c)).astype(np.float64)
-        # projected_coarse_change_dir = os.path.join(p.coarse_simplified_ha_difference_from_previous_year_dir, p.exogenous_label, p.climate_label, p.model_label, p.counterfactual_label, str(p.year))
-
-        # HACK IUCN
-        # TODOOO: Add this functionality in the scenarios csv? Maybe have it be a string to function?
-        # if 'restoration' in p.counterfactual_label:
-        #     projected_coarse_change_dir = os.path.join(p.coarse_simplified_projected_ha_difference_from_previous_year_dir, p.exogenous_label, p.climate_label, p.model_label, p.counterfactual_label, str(p.year))
-
-
-        filename_end = '_' + str(p.year) + '_' + str(p.previous_year) + '_ha_diff_'  + p.exogenous_label + '_' + p.climate_label + '_' + p.model_label + '_' + p.counterfactual_label + '.tif'
-        # filename_end = '_' + str(p.year) + '_' + str(p.previous_year) + '_ha_diff_'  + p.exogenous_label + '_' + p.climate_label + '_' + p.model_label + '_' + p.counterfactual_label + '_' + p.aggregation_method_string + '.tif'
-        projected_coarse_change_paths = [os.path.join(p.projected_coarse_change_dir, i + filename_end) for i in p.changing_class_labels]
-
-
-        for c, path in enumerate(projected_coarse_change_paths):
-        # for c, path in enumerate(list(p.projected_coarse_change_files[p.current_scenario_pairing_label][p.current_year][p.current_policy_scenario_label].values())):
-
-            # Scaling is unnecessary if you use stricly pyramidal zones... but i'm not sure i want to lose this yet e.g. for intersecting zones and country boundaries.
-            scale_coarse_results = 0
-            if scale_coarse_results:
-                unscaled = hb.as_array(path)
-                p.proportion_valid_fine_per_coarse_cell = hb.calc_proportion_of_coarse_res_with_valid_fine_res(unscaled, valid_mask_array).astype(np.float64)
-                scaled_proportion_to_allocate = p.proportion_valid_fine_per_coarse_cell * unscaled
-                scaled_proportion_to_allocate_path = os.path.join(p.cur_dir, os.path.split(path)[1])
-                hb.save_array_as_geotiff(scaled_proportion_to_allocate, scaled_proportion_to_allocate_path, p.fine_match_path, data_type=6)
-                projected_coarse_change_3d[c] = scaled_proportion_to_allocate.astype(np.float64)
-            else:
-                if p.write_projected_coarse_change_chunks:
-                    current_output_path = os.path.join(p.cur_dir, os.path.split(path)[1])
-                    # altered_path =
-                    projected_coarse_change_3d[c] = hb.load_geotiff_chunk_by_cr_size(path, p.coarse_blocks_list, output_path=current_output_path).astype(np.float64)
                 else:
-                    projected_coarse_change_3d[c] = hb.load_geotiff_chunk_by_cr_size(path, p.coarse_blocks_list).astype(np.float64)
+                    raise NameError('unspecified type')
 
-        # Note questionable choice here that the actual calibration parameters must be the last n-classes of columns
-        p.seals_class_names = spatial_regressors_df.columns.values[-len(changing_class_indices_array):]
-        spatial_regressor_trained_coefficients = spatial_regressors_df[p.seals_class_names].values.astype(np.float64).T
-        generation_best_parameters = np.copy(spatial_regressor_trained_coefficients)
-
-        p.call_string = ''
-
-        # L.setLevel(logging.DEBUG)
-        lulc_baseline_array = lulc_baseline_array.astype(np.int64)
-        hb.debug('projected_coarse_change_3d', type(projected_coarse_change_3d), projected_coarse_change_3d.dtype)
-        hb.debug('lulc_baseline_array', type(lulc_baseline_array), lulc_baseline_array.dtype, lulc_baseline_array)
-        hb.debug('spatial_layers_3d', type(spatial_layers_3d), spatial_layers_3d.dtype, spatial_layers_3d)
-        hb.debug('generation_best_parameters', type(generation_best_parameters), generation_best_parameters.dtype, generation_best_parameters)
-        hb.debug('spatial_layer_function_types_1d', type(spatial_layer_function_types_1d), spatial_layer_function_types_1d.dtype, spatial_layer_function_types_1d)
-        hb.debug('valid_mask_array', type(valid_mask_array), valid_mask_array.dtype, valid_mask_array)
-        hb.debug('p.changing_class_indices_array', type(changing_class_indices_array), changing_class_indices_array.dtype, changing_class_indices_array)
-        hb.debug('observed_lulc_array', type(observed_lulc_array), observed_lulc_array.dtype, observed_lulc_array)
-        hb.debug('hectares_per_grid_cell', type(hectares_per_grid_cell), hectares_per_grid_cell.dtype, hectares_per_grid_cell)
-        hb.debug('p.cur_dir', type(p.cur_dir), p.cur_dir)
-        hb.debug('p.loss_function_sigma', type(p.loss_function_sigma), p.loss_function_sigma)
-        hb.debug('p.call_string', type(p.call_string), p.call_string)
-
-        previous_cumulative_change_happened_path = os.path.join(previous_year_dir, 'cumulative_change_happened.tif')
-        if hb.path_exists(previous_cumulative_change_happened_path):
-            previous_cumulative_change_happened_array = hb.as_array(previous_cumulative_change_happened_path)
-            valid_mask_array = np.where(previous_cumulative_change_happened_array == 1, 0, valid_mask_array)
-        else:
-            previous_cumulative_change_happened_array = np.zeros_like(valid_mask_array)
-        # previous_change_year_path = os.path.join(previous_year_dir, 'change_year.tif')
-        # if hb.path_exists(previous_change_year_path):
-        #     previous_change_year_array = hb.as_array(previous_change_year_path)
-
-        allow_contracting = np.int64(p.allow_contracting)
-        # Strange choice, but the allocation function both calibrates AND RUNS the final projection using the calibration. If instead you want to
-        # Run on precalibrated parameters, you have to reload coarse_change_3d.
-        overall_similarity_score, lulc_projected_array, overall_similarity_plot, class_similarity_scores, class_similarity_plots, output_change_arrays, change_happened = \
-            calibrate(projected_coarse_change_3d,
-                      lulc_baseline_array,
-                      spatial_layers_3d,
-                      generation_best_parameters,
-                      spatial_layer_function_types_1d,
-                      valid_mask_array,
-                      changing_class_indices_array,
-                      p.changing_class_labels,
-                      observed_lulc_array,
-                      hectares_per_grid_cell,
-                      p.cur_dir,
-                      p.cython_reporting_level,
-                      allow_contracting,
-                      p.loss_function_sigma,
-                      output_match_path=tile_match_path,
-                      call_string=p.call_string)
-
-        # LEARNING POINT: GDAL silently fails to write if you have a file path too long. This happened below. Fix by enabling long-filepaths in OS.
-
-        # Write generated arrays to disk
-        generated_gt = hb.generate_geotransform_of_chunk_from_cr_size_and_larger_path(p.fine_blocks_list, p.base_year_lulc_path)
-        generated_projection = hb.common_projection_wkts['wgs84']
-        lulc_projected_array = lulc_projected_array.astype(np.int8)
-        hb.save_array_as_geotiff(lulc_projected_array, lulc_projected_path, tile_match_path, projection_override=generated_projection, ndv=255, data_type=1, compress=True, verbose=False)
-
-        # lulc_baseline_path = os.path.join(p.cur_dir, 'lulc_' + p.lulc_simplification_label + '_baseline_' + p.model_label + '_' + str(p.year) + '.tif')
-        # # lulc_baseline_path = os.path.join(p.cur_dir, 'lulc_' + p.lulc_simplification_label + '_' + p.exogenous_label + '_' + p.climate_label + '_' + p.model_label + '_' + p.counterfactual_label + '_' + str(p.year) + '.tif')
-        # if p.output_writing_level >= 1:
-        #     if not hb.path_exists(lulc_baseline_path):
-        #         hb.save_array_as_geotiff(lulc_baseline_array, lulc_baseline_path, tile_match_path, projection_override=generated_projection, ndv=255, data_type=1, compress=True, verbose=False)
-
-        if p.output_writing_level >= 1:
-            change_year_path = os.path.join(p.cur_dir, 'change_year.tif')
-            if not hb.path_exists(change_year_path):
-                change_year_array = np.zeros(lulc_projected_array.shape, dtype=np.int64)
-                for c, class_id in enumerate(p.changing_class_indices):
-                    change_year_array += np.where(output_change_arrays[c] == 1, p.year, 0)
-                hb.save_array_as_geotiff(change_year_array, change_year_path, tile_match_path, projection_override=generated_projection, ndv=-9999, data_type=5, compress=True, verbose=False)
-
-        if p.output_writing_level >= 1:
-            change_happened_path = os.path.join(p.cur_dir, 'change_happened.tif')
-            if not hb.path_exists(change_happened_path):
-                hb.save_array_as_geotiff(change_happened, change_happened_path, tile_match_path, projection_override=generated_projection, ndv=-9999, data_type=5, compress=True, verbose=False)
-
-        if p.output_writing_level >= 5:
-            for i, label in enumerate(p.changing_class_labels):
-                hb.save_array_as_geotiff(output_change_arrays[i], os.path.join(p.cur_dir, 'allocations_for_class_' + p.changing_class_labels[i] + '.tif'), tile_match_path)
-
-                # naive_upscale = hb.upscale_array(output_change_arrays[i], upscale_factor=resolution, upscale_method='mode')
-                # hb.show(output_change_arrays[i], output_path=hb.ruri(os.path.join(output_dir, 'allocations_for_class_' + str(i) + '.png')), vmin=0, vmax=1, title='allocations for class ' + str(i))
-        # if p.output_writing_level >= 4:
-        #     hb.save_array_as_geotiff(projected_lulc, hb.suri(os.path.join(output_dir, 'projected_lulc.tif'), call_string), output_match_path)
+            if p.base_data_dir in p.lulc_simplified_paths[p.key_base_year]:
+                observed_lulc_array = hb.load_geotiff_chunk_by_cr_size(p.lulc_simplified_paths[p.key_base_year], p.global_fine_blocks_list, output_path=None).astype(np.int64)
+            else:
+                observed_lulc_array = hb.load_geotiff_chunk_by_cr_size(p.lulc_simplified_paths[p.key_base_year], p.fine_blocks_list, output_path=None).astype(np.int64)
 
 
-        # This is the one other required written file because it is used in the next iteration.
-        cumulative_change_happened_path = os.path.join(p.cur_dir, 'cumulative_change_happened.tif')
-        if not hb.path_exists(cumulative_change_happened_path):
-            updated_cumulative_change_happened = np.where(change_happened == 1, 1, previous_cumulative_change_happened_array)
-            hb.save_array_as_geotiff(updated_cumulative_change_happened, cumulative_change_happened_path, tile_match_path, projection_override=generated_projection, ndv=-9999, data_type=5, compress=True, verbose=False)
+            valid_mask_array = np.where((observed_lulc_array != p.lulc_ndv), 1, 0).astype(np.int64)
+
+
+            # Set how much change for each class needs to be allocated.
+            projected_coarse_change_3d = np.zeros((len(changing_class_indices_array), coarse_n_r, coarse_n_c)).astype(np.float64)
+            # projected_coarse_change_dir = os.path.join(p.coarse_simplified_ha_difference_from_previous_year_dir, p.exogenous_label, p.climate_label, p.model_label, p.counterfactual_label, str(p.year))
+
+            # HACK IUCN
+            # TODOOO: Add this functionality in the scenarios csv? Maybe have it be a string to function?
+            # if 'restoration' in p.counterfactual_label:
+            #     projected_coarse_change_dir = os.path.join(p.coarse_simplified_projected_ha_difference_from_previous_year_dir, p.exogenous_label, p.climate_label, p.model_label, p.counterfactual_label, str(p.year))
+
+
+            filename_end = '_' + str(p.year) + '_' + str(p.previous_year) + '_ha_diff_'  + p.exogenous_label + '_' + p.climate_label + '_' + p.model_label + '_' + p.counterfactual_label + '.tif'
+            # filename_end = '_' + str(p.year) + '_' + str(p.previous_year) + '_ha_diff_'  + p.exogenous_label + '_' + p.climate_label + '_' + p.model_label + '_' + p.counterfactual_label + '_' + p.aggregation_method_string + '.tif'
+            projected_coarse_change_paths = [os.path.join(p.projected_coarse_change_dir, i + filename_end) for i in p.changing_class_labels]
+
+
+            for c, path in enumerate(projected_coarse_change_paths):
+            # for c, path in enumerate(list(p.projected_coarse_change_files[p.current_scenario_pairing_label][p.current_year][p.current_policy_scenario_label].values())):
+
+                # Scaling is unnecessary if you use stricly pyramidal zones... but i'm not sure i want to lose this yet e.g. for intersecting zones and country boundaries.
+                scale_coarse_results = 0
+                if scale_coarse_results:
+                    unscaled = hb.as_array(path)
+                    p.proportion_valid_fine_per_coarse_cell = hb.calc_proportion_of_coarse_res_with_valid_fine_res(unscaled, valid_mask_array).astype(np.float64)
+                    scaled_proportion_to_allocate = p.proportion_valid_fine_per_coarse_cell * unscaled
+                    scaled_proportion_to_allocate_path = os.path.join(p.cur_dir, os.path.split(path)[1])
+                    hb.save_array_as_geotiff(scaled_proportion_to_allocate, scaled_proportion_to_allocate_path, p.fine_match_path, data_type=6)
+                    projected_coarse_change_3d[c] = scaled_proportion_to_allocate.astype(np.float64)
+                else:
+                    if p.write_projected_coarse_change_chunks:
+                        current_output_path = os.path.join(p.cur_dir, os.path.split(path)[1])
+                        # altered_path =
+                        projected_coarse_change_3d[c] = hb.load_geotiff_chunk_by_cr_size(path, p.coarse_blocks_list, output_path=current_output_path).astype(np.float64)
+                    else:
+                        projected_coarse_change_3d[c] = hb.load_geotiff_chunk_by_cr_size(path, p.coarse_blocks_list).astype(np.float64)
+
+            # Note questionable choice here that the actual calibration parameters must be the last n-classes of columns
+            p.seals_class_names = spatial_regressors_df.columns.values[-len(changing_class_indices_array):]
+            spatial_regressor_trained_coefficients = spatial_regressors_df[p.seals_class_names].values.astype(np.float64).T
+            generation_best_parameters = np.copy(spatial_regressor_trained_coefficients)
+
+            p.call_string = ''
+
+            # L.setLevel(logging.DEBUG)
+            lulc_baseline_array = lulc_baseline_array.astype(np.int64)
+            hb.debug('projected_coarse_change_3d', type(projected_coarse_change_3d), projected_coarse_change_3d.dtype)
+            hb.debug('lulc_baseline_array', type(lulc_baseline_array), lulc_baseline_array.dtype, lulc_baseline_array)
+            hb.debug('spatial_layers_3d', type(spatial_layers_3d), spatial_layers_3d.dtype, spatial_layers_3d)
+            hb.debug('generation_best_parameters', type(generation_best_parameters), generation_best_parameters.dtype, generation_best_parameters)
+            hb.debug('spatial_layer_function_types_1d', type(spatial_layer_function_types_1d), spatial_layer_function_types_1d.dtype, spatial_layer_function_types_1d)
+            hb.debug('valid_mask_array', type(valid_mask_array), valid_mask_array.dtype, valid_mask_array)
+            hb.debug('p.changing_class_indices_array', type(changing_class_indices_array), changing_class_indices_array.dtype, changing_class_indices_array)
+            hb.debug('observed_lulc_array', type(observed_lulc_array), observed_lulc_array.dtype, observed_lulc_array)
+            hb.debug('hectares_per_grid_cell', type(hectares_per_grid_cell), hectares_per_grid_cell.dtype, hectares_per_grid_cell)
+            hb.debug('p.cur_dir', type(p.cur_dir), p.cur_dir)
+            hb.debug('p.loss_function_sigma', type(p.loss_function_sigma), p.loss_function_sigma)
+            hb.debug('p.call_string', type(p.call_string), p.call_string)
+
+            previous_cumulative_change_happened_path = os.path.join(previous_year_dir, 'cumulative_change_happened.tif')
+            if hb.path_exists(previous_cumulative_change_happened_path):
+                previous_cumulative_change_happened_array = hb.as_array(previous_cumulative_change_happened_path)
+                valid_mask_array = np.where(previous_cumulative_change_happened_array == 1, 0, valid_mask_array)
+            else:
+                previous_cumulative_change_happened_array = np.zeros_like(valid_mask_array)
+            # previous_change_year_path = os.path.join(previous_year_dir, 'change_year.tif')
+            # if hb.path_exists(previous_change_year_path):
+            #     previous_change_year_array = hb.as_array(previous_change_year_path)
+
+            allow_contracting = np.int64(p.allow_contracting)
+            # Strange choice, but the allocation function both calibrates AND RUNS the final projection using the calibration. If instead you want to
+            # Run on precalibrated parameters, you have to reload coarse_change_3d.
+            overall_similarity_score, lulc_projected_array, overall_similarity_plot, class_similarity_scores, class_similarity_plots, output_change_arrays, change_happened = \
+                calibrate(projected_coarse_change_3d,
+                        lulc_baseline_array,
+                        spatial_layers_3d,
+                        generation_best_parameters,
+                        spatial_layer_function_types_1d,
+                        valid_mask_array,
+                        changing_class_indices_array,
+                        p.changing_class_labels,
+                        observed_lulc_array,
+                        hectares_per_grid_cell,
+                        p.cur_dir,
+                        p.cython_reporting_level,
+                        allow_contracting,
+                        p.loss_function_sigma,
+                        output_match_path=tile_match_path,
+                        call_string=p.call_string)
+
+            # LEARNING POINT: GDAL silently fails to write if you have a file path too long. This happened below. Fix by enabling long-filepaths in OS.
+
+            # Write generated arrays to disk
+            generated_gt = hb.generate_geotransform_of_chunk_from_cr_size_and_larger_path(p.fine_blocks_list, p.base_year_lulc_path)
+            generated_projection = hb.common_projection_wkts['wgs84']
+            lulc_projected_array = lulc_projected_array.astype(np.int8)
+            hb.save_array_as_geotiff(lulc_projected_array, lulc_projected_path, tile_match_path, projection_override=generated_projection, ndv=255, data_type=1, compress=True, verbose=False)
+
+            # lulc_baseline_path = os.path.join(p.cur_dir, 'lulc_' + p.lulc_simplification_label + '_baseline_' + p.model_label + '_' + str(p.year) + '.tif')
+            # # lulc_baseline_path = os.path.join(p.cur_dir, 'lulc_' + p.lulc_simplification_label + '_' + p.exogenous_label + '_' + p.climate_label + '_' + p.model_label + '_' + p.counterfactual_label + '_' + str(p.year) + '.tif')
+            # if p.output_writing_level >= 1:
+            #     if not hb.path_exists(lulc_baseline_path):
+            #         hb.save_array_as_geotiff(lulc_baseline_array, lulc_baseline_path, tile_match_path, projection_override=generated_projection, ndv=255, data_type=1, compress=True, verbose=False)
+
+            if p.output_writing_level >= 1:
+                change_year_path = os.path.join(p.cur_dir, 'change_year.tif')
+                if not hb.path_exists(change_year_path):
+                    change_year_array = np.zeros(lulc_projected_array.shape, dtype=np.int64)
+                    for c, class_id in enumerate(p.changing_class_indices):
+                        change_year_array += np.where(output_change_arrays[c] == 1, p.year, 0)
+                    hb.save_array_as_geotiff(change_year_array, change_year_path, tile_match_path, projection_override=generated_projection, ndv=-9999, data_type=5, compress=True, verbose=False)
+
+            if p.output_writing_level >= 1:
+                change_happened_path = os.path.join(p.cur_dir, 'change_happened.tif')
+                if not hb.path_exists(change_happened_path):
+                    hb.save_array_as_geotiff(change_happened, change_happened_path, tile_match_path, projection_override=generated_projection, ndv=-9999, data_type=5, compress=True, verbose=False)
 
             if p.output_writing_level >= 5:
-                validation_dir = os.path.join(p.cur_dir, 'validation')
-                hb.create_directories(validation_dir)
-                from hazelbean.calculation_core import \
-                    aspect_ratio_array_functions
+                for i, label in enumerate(p.changing_class_labels):
+                    hb.save_array_as_geotiff(output_change_arrays[i], os.path.join(p.cur_dir, 'allocations_for_class_' + p.changing_class_labels[i] + '.tif'), tile_match_path)
 
-                # import upscale_retaining_sum
-                for c, class_label in enumerate(p.changing_class_labels):
-                    projected_recoarsening_path = os.path.join(validation_dir, class_label + '_allocated_prop.tif')
-                    hb.create_directories(projected_recoarsening_path)
-                    if not hb.path_exists(projected_recoarsening_path):
-                        target_value = p.changing_class_indices[c]
-
-                        upscale_factor = int(p.coarse_resolution / p.fine_resolution)
-
-                        was_class = np.where(lulc_baseline_array == target_value, 1, 0).astype(np.float64)
-                        is_class = np.where(lulc_projected_array == target_value, 1, 0).astype(np.float64)
-
-                        was_class_coarse = aspect_ratio_array_functions.upscale_retaining_sum(was_class, upscale_factor)
-                        is_class_coarse = aspect_ratio_array_functions.upscale_retaining_sum(is_class, upscale_factor)
-                        hectares_per_grid_cell_upscaled = aspect_ratio_array_functions.upscale_using_mean(hectares_per_grid_cell, upscale_factor)
-                        net = is_class_coarse - was_class_coarse
-                        net_ha = net * hectares_per_grid_cell_upscaled
+                    # naive_upscale = hb.upscale_array(output_change_arrays[i], upscale_factor=resolution, upscale_method='mode')
+                    # hb.show(output_change_arrays[i], output_path=hb.ruri(os.path.join(output_dir, 'allocations_for_class_' + str(i) + '.png')), vmin=0, vmax=1, title='allocations for class ' + str(i))
+            # if p.output_writing_level >= 4:
+            #     hb.save_array_as_geotiff(projected_lulc, hb.suri(os.path.join(output_dir, 'projected_lulc.tif'), call_string), output_match_path)
 
 
-                        hb.save_array_as_geotiff(net_ha, projected_recoarsening_path, block_ha_per_cell_coarse_path, projection_override=generated_projection, ndv=-9999, data_type=5, compress=True, verbose=False)
+            # This is the one other required written file because it is used in the next iteration.
+            cumulative_change_happened_path = os.path.join(p.cur_dir, 'cumulative_change_happened.tif')
+            if not hb.path_exists(cumulative_change_happened_path):
+                updated_cumulative_change_happened = np.where(change_happened == 1, 1, previous_cumulative_change_happened_array)
+                hb.save_array_as_geotiff(updated_cumulative_change_happened, cumulative_change_happened_path, tile_match_path, projection_override=generated_projection, ndv=-9999, data_type=5, compress=True, verbose=False)
+
+                if p.output_writing_level >= 5:
+                    validation_dir = os.path.join(p.cur_dir, 'validation')
+                    hb.create_directories(validation_dir)
+                    from hazelbean.calculation_core import \
+                        aspect_ratio_array_functions
+
+                    # import upscale_retaining_sum
+                    for c, class_label in enumerate(p.changing_class_labels):
+                        projected_recoarsening_path = os.path.join(validation_dir, class_label + '_allocated_prop.tif')
+                        hb.create_directories(projected_recoarsening_path)
+                        if not hb.path_exists(projected_recoarsening_path):
+                            target_value = p.changing_class_indices[c]
+
+                            upscale_factor = int(p.coarse_resolution / p.fine_resolution)
+
+                            was_class = np.where(lulc_baseline_array == target_value, 1, 0).astype(np.float64)
+                            is_class = np.where(lulc_projected_array == target_value, 1, 0).astype(np.float64)
+
+                            was_class_coarse = aspect_ratio_array_functions.upscale_retaining_sum(was_class, upscale_factor)
+                            is_class_coarse = aspect_ratio_array_functions.upscale_retaining_sum(is_class, upscale_factor)
+                            hectares_per_grid_cell_upscaled = aspect_ratio_array_functions.upscale_using_mean(hectares_per_grid_cell, upscale_factor)
+                            net = is_class_coarse - was_class_coarse
+                            net_ha = net * hectares_per_grid_cell_upscaled
+
+
+                            hb.save_array_as_geotiff(net_ha, projected_recoarsening_path, block_ha_per_cell_coarse_path, projection_override=generated_projection, ndv=-9999, data_type=5, compress=True, verbose=False)
 
 
 
-            # seals_utils.calc_observed_lulc_change_for_two_lulc_paths(previous_year_path, lulc_projected_path, block_ha_per_cell_coarse_path, p.changing_class_indices, validation_dir)
+                # seals_utils.calc_observed_lulc_change_for_two_lulc_paths(previous_year_path, lulc_projected_path, block_ha_per_cell_coarse_path, p.changing_class_indices, validation_dir)
 
 
 
@@ -2472,10 +2474,14 @@ def stitched_lulc_simplified_scenarios(p):
                     if True:
                     # if p.write_global_lulc_overviews_and_tifs:
                         if p.aoi == 'global':
-                            hb.make_path_global_pyramid(p.lulc_projected_stitched_path)
+                            # Removed because now making it into a pog below
+                            # hb.make_path_global_pyramid(p.lulc_projected_stitched_path)
+                            pass
 
         for file_path in vrt_paths_to_remove:
             hb.remove_path(file_path)
+        
+        hb.make_paths_pogs_in_parallel(p.cur_dir, exclude_strings='2025', dont_actually_do_it=False, verbose=True)
 
 def luh_seals_baseline_adjustment(p):
     # SHORTCUT, this should have been put in GTAP project but i'm racing.
