@@ -203,9 +203,9 @@ def build_standard_task_tree(p):
     p.regional_change_task = p.add_task(seals_process_coarse_timeseries.regional_change)
 
     ##### ALLOCATION #####
-    p.allocations_task = p.add_iterator(seals_main.allocations, skip_existing=1)
-    p.allocation_zones_task = p.add_iterator(seals_main.allocation_zones, run_in_parallel=p.run_in_parallel, parent=p.allocations_task, skip_existing=1)
-    p.allocation_task = p.add_task(seals_main.allocation, parent=p.allocation_zones_task, skip_existing=1)
+    p.allocations_task = p.add_iterator(seals_main.allocations, skip_existing=0)
+    p.allocation_zones_task = p.add_iterator(seals_main.allocation_zones, run_in_parallel=p.run_in_parallel, parent=p.allocations_task, skip_existing=0)
+    p.allocation_task = p.add_task(seals_main.allocation, parent=p.allocation_zones_task, skip_existing=0)
 
     ##### STITCH ZONES #####
     p.stitched_lulc_simplified_scenarios_task = p.add_task(seals_main.stitched_lulc_simplified_scenarios)
