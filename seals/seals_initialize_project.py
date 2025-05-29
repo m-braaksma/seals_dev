@@ -216,6 +216,48 @@ def build_standard_task_tree(p):
 
 
 
+def build_standard_with_postprocessing_task_tree(p):
+
+    # Define the project AOI
+    p.project_aoi_task = p.add_task(seals_tasks.project_aoi)
+
+    ##### FINE PROCESSED INPUTS #####
+    p.fine_processed_inputs_task = p.add_task(seals_generate_base_data.fine_processed_inputs)
+    p.generated_kernels_task = p.add_task(seals_generate_base_data.generated_kernels, parent=p.fine_processed_inputs_task, creates_dir=False)
+    p.lulc_clip_task = p.add_task(seals_generate_base_data.lulc_clip, parent=p.fine_processed_inputs_task, creates_dir=False)
+    p.lulc_simplifications_task = p.add_task(seals_generate_base_data.lulc_simplifications, parent=p.fine_processed_inputs_task, creates_dir=False)
+    p.lulc_binaries_task = p.add_task(seals_generate_base_data.lulc_binaries, parent=p.fine_processed_inputs_task, creates_dir=False)
+    p.lulc_convolutions_task = p.add_task(seals_generate_base_data.lulc_convolutions, parent=p.fine_processed_inputs_task, creates_dir=False)
+
+    ##### COARSE CHANGE #####
+    p.coarse_change_task = p.add_task(seals_process_coarse_timeseries.coarse_change, skip_existing=0)
+    p.extraction_task = p.add_task(seals_process_coarse_timeseries.coarse_extraction, parent=p.coarse_change_task, run=1, skip_existing=0)
+    p.coarse_simplified_task = p.add_task(seals_process_coarse_timeseries.coarse_simplified_proportion, parent=p.coarse_change_task, skip_existing=0)
+    p.coarse_simplified_ha_task = p.add_task(seals_process_coarse_timeseries.coarse_simplified_ha, parent=p.coarse_change_task, skip_existing=0)
+    p.coarse_simplified_ha_difference_from_previous_year_task = p.add_task(seals_process_coarse_timeseries.coarse_simplified_ha_difference_from_previous_year, parent=p.coarse_change_task, skip_existing=0)
+
+    ##### REGIONAL
+    p.regional_change_task = p.add_task(seals_process_coarse_timeseries.regional_change)
+
+    ##### ALLOCATION #####
+    p.allocations_task = p.add_iterator(seals_main.allocations, skip_existing=1)
+    p.allocation_zones_task = p.add_iterator(seals_main.allocation_zones, run_in_parallel=p.run_in_parallel, parent=p.allocations_task, skip_existing=1)
+    p.allocation_task = p.add_task(seals_main.allocation, parent=p.allocation_zones_task, skip_existing=1)
+
+    ##### STITCH ZONES #####
+    p.stitched_lulc_simplified_scenarios_task = p.add_task(seals_main.stitched_lulc_simplified_scenarios)
+
+    ##### VIZUALIZE EXISTING DATA #####
+    p.visualization_task = p.add_task(seals_visualization_tasks.visualization)
+    p.lulc_pngs_task = p.add_task(seals_visualization_tasks.lulc_pngs, parent=p.visualization_task)
+    p.coarse_change_with_class_change_underneath_task = p.add_task(seals_visualization_tasks.coarse_change_with_class_change_underneath, parent=p.visualization_task)
+    # p.show_lulc_class_change_difference_task = p.add_task(seals_visualization_tasks.show_lulc_class_change_difference, parent=p.visualization_task)
+    p.coarse_fine_with_report_task = p.add_task(seals_visualization_tasks.coarse_fine_with_report, parent=p.visualization_task)
+    p.full_change_matrices_pngs_task = p.add_task(seals_visualization_tasks.full_change_matrices_pngs, parent=p.visualization_task)
+    
+
+
+
 def build_custom_coarse_algorithm_task_tree(p):
 
     # Define the project AOI

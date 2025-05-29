@@ -33,7 +33,8 @@ def coarse_change_with_class_change_underneath(passed_p=None):
 
                     # By default, this will select 4 zones from different parts of the list to plot full change matrices. This is slow.
                     # You can override this to plot all here:
-                    zones_to_plot = 'first' # one of first, all, or four
+                    # zones_to_plot = 'first' # one of first, all, or four
+                    zones_to_plot = 'random_four'
 
                     for year_c, year in enumerate(p.years):
                         target_allocation_zones_dir = os.path.join(p.allocations_dir, p.exogenous_label, p.climate_label, p.model_label, p.counterfactual_label, str(year), 'allocation_zones')
@@ -50,12 +51,42 @@ def coarse_change_with_class_change_underneath(passed_p=None):
                             target_zones = [p.global_processing_blocks_list[0], p.global_processing_blocks_list[int(len(p.global_processing_blocks_list)/4)], p.global_processing_blocks_list[int(len(p.global_processing_blocks_list)/2)], p.global_processing_blocks_list[int(len(p.global_processing_blocks_list)*3/4)]]
                         elif zones_to_plot == 'first':
                             target_zones = [p.global_processing_blocks_list[0]]
+                        elif zones_to_plot == 'random_four':
+                            n_processing_blocks = int(len(p.global_processing_blocks_list))
+                            if n_processing_blocks < 4:
+                                raise ValueError('There are not enough processing blocks to select four random ones. Please use a different zones_to_plot option.')
+                            starting_tile_pos = [
+                                        int(n_processing_blocks*(1/8)), #
+                                        int(n_processing_blocks*(3/8)),
+                                        int(n_processing_blocks*(5/8)),
+                                        int(n_processing_blocks*(7/8)),
+                                        ]
+                            
+                            # Iterate through the selected starting positions and check if there is an lulc_file actually existing.                            
+                            target_zones = []
+                            for target_pos in starting_tile_pos:
+                                for i in range(int(n_processing_blocks / 4)):
+                                    
+                                    target_block = p.global_processing_blocks_list[target_pos + i]
+                                    target_zone = str(target_block[0] + '_' + target_block[1])
+                                    ha_diff_from_previous_year_dir_to_plot = os.path.join(p.coarse_simplified_ha_difference_from_previous_year_dir, p.exogenous_label, p.climate_label, p.model_label, p.counterfactual_label, str(year))
+                                    allocation_dir_to_plot = os.path.join(p.intermediate_dir, 'allocations', p.exogenous_label, p.climate_label, p.model_label, p.counterfactual_label, str(year), 'allocation_zones', str(target_zone), 'allocation')
+                                    lulc_projected_path= os.path.join(allocation_dir_to_plot, 'lulc_' + p.lulc_src_label + '_'  + p.lulc_simplification_label + '_' + p.exogenous_label + '_' + p.climate_label + '_' + p.model_label + '_' + p.counterfactual_label + '_' + str(year) + '.tif')
+                                    print('lulc_projected_path', lulc_projected_path)
+                                    if hb.path_exists(lulc_projected_path):
+                                        target_zones.append(target_zone)
+                                        break
+                                    if len(target_zones) >= 4:
+                                        break                                
+                            if len(target_zones) < 4:
+                                raise ValueError('NONE OF THE BLOCKS CHECKED have lulc maps present to select four random ones. Please use a different zones_to_plot option.')
+
                         else:
                             raise ValueError('zones_to_plot must be one of first, all, or four')
 
-                        # Make sure the target zones are in the right format
-                        for c, row in enumerate(target_zones):
-                                target_zones[c] = str(row[0] + '_' + row[1])
+                        # # Make sure the target zones are in the right format
+                        # for c, row in enumerate(target_zones):
+                        #         target_zones[c] = str(row[0] + '_' + row[1])
 
                         for target_zone in target_zones:
                             ha_diff_from_previous_year_dir_to_plot = os.path.join(p.coarse_simplified_ha_difference_from_previous_year_dir, p.exogenous_label, p.climate_label, p.model_label, p.counterfactual_label, str(year))
@@ -64,7 +95,7 @@ def coarse_change_with_class_change_underneath(passed_p=None):
                             lulc_projected_array = None
 
                             if previous_year == p.key_base_year:
-                                lulc_previous_year_path = os.path.join(allocation_dir_to_plot, 'lulc_' + p.lulc_src_label + '_' + p.lulc_simplification_label + '_baseline_' + p.model_label + '_' + str(p.year) + '.tif')
+                                lulc_previous_year_path = os.path.join(allocation_dir_to_plot, 'lulc_' + p.lulc_src_label + '_' + p.lulc_simplification_label + '_' + p.model_label + '_' + str(previous_year) + '.tif')
 
                                 lulc_previous_year_array = None     # For deffered loading
                             else:
@@ -77,7 +108,7 @@ def coarse_change_with_class_change_underneath(passed_p=None):
                                 filename = class_label + '_' + str(year) + '_' + str(previous_year) + '_ha_diff_' + p.exogenous_label + '_' + p.climate_label + '_' + p.model_label + '_' + p.counterfactual_label + '.tif'
                                 scaled_proportion_to_allocate_path = os.path.join(ha_diff_from_previous_year_dir_to_plot, filename)
                                 output_path = os.path.join(p.cur_dir, str(year) + '_' + target_zone + '_' + class_label + '_projected_expansion_and_contraction.png')
-
+                                
                                 if hb.path_exists(scaled_proportion_to_allocate_path) and not hb.path_exists(output_path):
                                     hb.log('Plotting ' + output_path)
                                     if lulc_projected_array is None:
@@ -86,7 +117,14 @@ def coarse_change_with_class_change_underneath(passed_p=None):
 
                                     if lulc_previous_year_array is None:
                                         lulc_previous_year_array = hb.as_array_resampled_to_size(lulc_previous_year_path, max_plotting_size)
-                                    change_array = hb.as_array(scaled_proportion_to_allocate_path)
+                                    
+                                    
+                                    cr_size =[target_zone.split('_')[0], target_zone.split('_')[1], int(p.processing_resolution), int(p.processing_resolution)] # This is the coarse resolution size of the zone to plot.
+                                    # cr_size = p.global_processing_blocks_list[0] # This is the coarse resolution size of the zone to plot.
+                                    change_array = hb.load_geotiff_chunk_by_cr_size(scaled_proportion_to_allocate_path, cr_size)
+                                    # change_array = hb.as_array(scaled_proportion_to_allocate_path)
+
+
 
                                     show_class_expansions_vs_change_underneath(lulc_previous_year_array, lulc_projected_array, class_id, change_array, output_path,
                                                                     title='Class ' + class_label + ' projected expansion and contraction on coarse change')

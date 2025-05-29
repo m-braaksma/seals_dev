@@ -31,7 +31,7 @@ if __name__ == '__main__':
     p.run_in_parallel = 1 # Must be set before building the task tree if the task tree has parralel iterator tasks.
 
     # Build the task tree via a building function and assign it to p. IF YOU WANT TO LOOK AT THE MODEL LOGIC, INSPECT THIS FUNCTION
-    seals_initialize_project.build_standard_task_tree(p)
+    seals_initialize_project.build_standard_with_postprocessing_task_tree(p)
 
     # Set the base data dir. The model will check here to see if it has everything it needs to run.
     # If anything is missing, it will download it. You can use the same base_data dir across multiple projects.
@@ -55,7 +55,7 @@ if __name__ == '__main__':
     seals_initialize_project.initialize_scenario_definitions(p)
         
     # Set processing resolution: determines how large of a chunk should be processed at a time. 4 deg is about max for 64gb memory systems
-    p.processing_resolution = 1.0 # In degrees. Must be in pyramid_compatible_resolutions
+    p.processing_resolution = 4.0 # In degrees. Must be in pyramid_compatible_resolutions
 
     seals_initialize_project.set_advanced_options(p)
 
