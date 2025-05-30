@@ -19,6 +19,8 @@ if __name__ == '__main__':
     # including where the project_dir and base_data are located.
     # The project_name is used to name the project directory below. If the directory exists, each task will not recreate
     # files that already exist.
+    
+    
     p.user_dir = os.path.expanduser('~')
     p.extra_dirs = ['Files', 'seals', 'projects']
     p.project_name = 'luh2_300m_global'

@@ -55,6 +55,7 @@ if __name__ == '__main__':
     seals_initialize_project.initialize_scenario_definitions(p)
         
     # Set processing resolution: determines how large of a chunk should be processed at a time. 4 deg is about max for 64gb memory systems
+    # NOTE! If using a spatially-explicit set of parameters, the processing resolution must be the same as the resolution used in the training (or you'll get the wrong parameters in each zone)
     p.processing_resolution = 1.0 # In degrees. Must be in pyramid_compatible_resolutions
 
     seals_initialize_project.set_advanced_options(p)
