@@ -2486,7 +2486,8 @@ def stitched_lulc_simplified_scenarios(p):
         for file_path in vrt_paths_to_remove:
             hb.remove_path(file_path)
         
-        hb.make_paths_pogs_in_parallel(p.cur_dir, exclude_strings='2025', dont_actually_do_it=False, verbose=True)
+        # Even with 256gb memory, running 30 parallel pogers at once hits a ZSTD-related compression memory error.
+        hb.make_paths_pogs_in_parallel(p.cur_dir, exclude_strings='2025', max_workers=16, dont_actually_do_it=False, verbose=True)
 
 def luh_seals_baseline_adjustment(p):
     # SHORTCUT, this should have been put in GTAP project but i'm racing.
