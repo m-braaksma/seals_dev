@@ -584,6 +584,7 @@ def assign_defaults_from_model_spec(input_object, model_spec_dict):
 
 
 def assign_df_row_to_object_attributes(input_object, input_row):
+    # TODO CRITICAL, eliminate the duplication of this code across seals, gtappy, gtap_invest etc.
     # srtip()
     # Rules:
     # First check if is numeric
@@ -601,12 +602,59 @@ def assign_df_row_to_object_attributes(input_object, input_row):
         except:
             is_intable = False
 
-        if attribute_name == 'calibration_parameters_source':
+        if attribute_name == 'regional_projections_input_path':
             pass
+        
+        
+        
+        # Check if attribute name or attribute_value have cat_ears.
+        has_cat_ears = hb.has_cat_ears(attribute_name) or hb.has_cat_ears(attribute_value)
+
+            
+        
+        # # Check if the attribute has cat_ears
+        # if '<^' in str(attribute_value):
+            
+        #     # build the replace dict
+        #     # ce_list = hb.parse_to_ce_list(attribute_value) # BORKED
+        #     # while 1:
+                
+        #     # TODO HACK Only parses the first catear entry
+        #     first_ce_entry = attribute_value.split('<^', 1)[1].split('^>', 1)[0]
+        #     replace_dict = {}
+        #     if getattr(input_object, first_ce_entry, None) is not None:
+        #         replace_dict[i] = getattr(input_object, i)
+        #     # replace the cat_ears
+        #     attribute_value = hb.replace_in_string_via_dict(attribute_value, replace_dict)
+            
+            
+        #     hb.replace_cat_ears_with_variables(p.regional_projections_input_path, year)
+        
+        
+        # CRITICAL TODO, make this consistent across multiple projects that implement it.
         # NOTE Clever use of p.get_path() here.
-        if '.' in str(attribute_value) and not is_floatable: # Might be a path
-            path = input_object.get_path(attribute_value)
-            setattr(input_object, attribute_name, path)
+        if '.' in str(attribute_value) and not is_floatable: # Might be a path        
+            if has_cat_ears:
+                path = input_object.get_path(attribute_value, leave_ref_path_if_fail=True)
+            else:    
+                path = input_object.get_path(attribute_value)
+            setattr(input_object, attribute_name, path)        
+        
+        
+        
+        
+        
+        # # NOTE Clever use of p.get_path() here.
+        # if '.' in str(attribute_value) and not is_floatable: # Might be a path
+        #     path = input_object.get_path(attribute_value)
+        #     setattr(input_object, attribute_name, path)
+            
+            
+            
+            
+            
+            
+            
 
         elif 'year' in attribute_name:
             if ' ' in str(attribute_value):

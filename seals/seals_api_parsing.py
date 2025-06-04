@@ -129,9 +129,27 @@ def assign_df_row_to_object_attributes(input_object, input_row):
         
         if attribute_name == 'calibration_parameters_source':
             pass
+        
+        # Check if the attribute has cat_ears
+        if '<^' in str(attribute_value):
+            
+            # build the replace dict
+            ce_list = hb.parse_to_ce_list(attribute_value)
+            replace_dict = {}
+            for i in ce_list:
+                if getattr(input_object, i) is not None:
+                    replace_dict[i] = getattr(input_object, i)
+            # replace the cat_ears
+            attribute_value = hb.replace_in_string_via_dict(attribute_value, replace_dict)
+        
+        
+        
         # NOTE Clever use of p.get_path() here.
-        if '.' in str(attribute_value) and not is_floatable: # Might be a path            
-            path = input_object.get_path(attribute_value)
+        if '.' in str(attribute_value) and not is_floatable: # Might be a path        
+            if '<^' in str(attribute_value):
+                path = input_object.get_path(attribute_value, path_as_inputted=True)
+            else:    
+                path = input_object.get_path(attribute_value)
             setattr(input_object, attribute_name, path)
             
         elif 'year' in attribute_name:

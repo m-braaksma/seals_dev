@@ -1436,13 +1436,15 @@ def allocations(p):
 
                 for c, year in enumerate(p.years):
                     if hasattr(p, 'regional_projections_input_path'):
+                        
+                        p.regional_projections_input_path = hb.replace_cat_ears_with_variables(p.regional_projections_input_path, year)
 
                         if p.regional_projections_input_path:
                             got_path = p.get_path(p.regional_projections_input_path)
                             task_dir = os.path.join(p.intermediate_dir, p.regional_projections_input_path)
 
 
-                            # Tricky case here, because there was catears in the refpath, it never found it and thus assumed it was an input to be created
+                            # Tricky case here, because there was cat_ears in the refpath, it never found it and thus assumed it was an input to be created
                             # This means the path has the extra cur_dir derived paths. Hack here to find the refpath and merge it with intermediate
                             replace_dict = {'<^year^>': str(p.years[0])}
                             regional_change_classes_path1 = hb.replace_in_string_via_dict(got_path, replace_dict)
@@ -1525,14 +1527,17 @@ def allocation_zones(p):
         if hasattr(p, 'regional_projections_input_path'):
             
             if p.regional_projections_input_path:
-                got_path = p.get_path(p.regional_projections_input_path)
+                replace_dict = {'<^year^>': str(p.years[0])}
+                regional_projections_input_path_pre1 = hb.replace_in_string_via_dict(p.regional_projections_input_path, replace_dict)                
+                
+                got_path = p.get_path(regional_projections_input_path_pre1)
                 task_dir = os.path.join(p.intermediate_dir, p.regional_projections_input_path)                            
 
 
-                # Tricky case here, because there was catears in the refpath, it never found it and thus assumed it was an input to be created
+                # Tricky case here, because there was cat_ears in the refpath, it never found it and thus assumed it was an input to be created
                 # This means the path has the extra cur_dir derived paths. Hack here to find the refpath and merge it with intermediate
                 replace_dict = {'<^year^>': str(p.years[0])}
-                regional_change_classes_path1 = hb.replace_in_string_via_dict(got_path, replace_dict)
+                regional_change_classes_path_pre2 = hb.replace_in_string_via_dict(got_path, replace_dict)
                     
                 if hb.path_exists(regional_change_classes_path1):
                     regional_change_classes_path = regional_change_classes_path1
@@ -2090,7 +2095,7 @@ def allocation(passed_p=None):
             # get from the baseline lulc.
             hectares_per_grid_coarse_cell = hb.load_geotiff_chunk_by_cr_size(p.aoi_ha_per_cell_coarse_path, p.coarse_blocks_list, output_path=block_ha_per_cell_coarse_path).astype(np.float64)
 
-            if p.output_writing_level > 5:
+            if p.output_writing_level > 0:
                 hectares_per_grid_cell = hb.load_geotiff_chunk_by_cr_size(p.aoi_ha_per_cell_fine_path, p.fine_blocks_list, output_path=block_ha_per_cell_fine_path).astype(np.float64)
             else:
                 hectares_per_grid_cell = hb.load_geotiff_chunk_by_cr_size(p.aoi_ha_per_cell_fine_path, p.fine_blocks_list).astype(np.float64)

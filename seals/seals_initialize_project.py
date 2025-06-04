@@ -252,7 +252,16 @@ def build_standard_with_postprocessing_task_tree(p):
     p.lulc_pngs_task = p.add_task(seals_visualization_tasks.lulc_pngs, parent=p.visualization_task)
     p.coarse_change_with_class_change_underneath_task = p.add_task(seals_visualization_tasks.coarse_change_with_class_change_underneath, parent=p.visualization_task)
     # p.show_lulc_class_change_difference_task = p.add_task(seals_visualization_tasks.show_lulc_class_change_difference, parent=p.visualization_task)
-    p.coarse_fine_with_report_task = p.add_task(seals_visualization_tasks.coarse_fine_with_report, parent=p.visualization_task)
+    # p.coarse_fine_with_report_task = p.add_task(seals_visualization_tasks.coarse_fine_with_report, parent=p.visualization_task)
+    
+    
+    # START HERE: Many of the visualizations require extra extra things be generated. Separate the global-post-processing run from one that assumes a slower but comprehensive one is run.
+    # START HERE: It did calculate  the change matrix but it seems to be inverted. figure out why.
+    
+    # For each class, plot the coarse and fine data
+    p.plot_full_change_matrices_task = p.add_task(seals_main.full_change_matrices, parent=p.visualization_task)
+    
+    # For each class, plot the coarse and fine data
     p.full_change_matrices_pngs_task = p.add_task(seals_visualization_tasks.full_change_matrices_pngs, parent=p.visualization_task)
     
 

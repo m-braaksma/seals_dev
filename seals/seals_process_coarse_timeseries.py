@@ -38,7 +38,7 @@ def regional_change(p):
                         else:
                             previous_year = p.key_base_year
                             
-                        # Tricky case here, because there was catears in the refpath, it never found it and thus assumed it was an input to be created
+                        # Tricky case here, because there was cat_ears in the refpath, it never found it and thus assumed it was an input to be created
                         # This means the path has the extra cur_dir derived paths. Hack here to find the refpath and merge it with intermediate
                         replace_dict = {'<^year^>': str(p.years[0])}
                         regional_change_classes_path1 = hb.replace_in_string_via_dict(p.regional_projections_input_path, replace_dict)
