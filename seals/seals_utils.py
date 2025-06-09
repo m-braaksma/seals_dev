@@ -1558,8 +1558,8 @@ def convert_regional_change_to_coarse(regional_change_vector_path, regional_chan
                     else: 
                         allocate_per_zone_dict[zone_id] = result
                             
-
-                hb.reclassify_raster_hb(region_ids_raster_path, allocate_per_zone_dict, output_path, output_data_type=7, match_path=None, invoke_full_callback=False, verbose=False)
+                print('Allocate per zone dict for ' + column + ': ' + str(allocate_per_zone_dict))
+                hb.reclassify_raster_hb(region_ids_raster_path, allocate_per_zone_dict, output_path, output_data_type=7, match_path=None, invoke_full_callback=False, existing_values='zero', verbose=False)
                     
 def combine_coarsified_regional_with_coarse_estimate(coarsified_path, coarse_estimate_path, combination_algorithm, output_path):
     ### ABANDONED?

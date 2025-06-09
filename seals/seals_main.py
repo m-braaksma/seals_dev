@@ -1437,7 +1437,7 @@ def allocations(p):
                 for c, year in enumerate(p.years):
                     if hasattr(p, 'regional_projections_input_path'):
                         
-                        p.regional_projections_input_path = hb.replace_cat_ears_with_variables(p.regional_projections_input_path, year)
+                        p.regional_projections_input_path = hb.replace_cat_ears_with_dict(p.regional_projections_input_path, {'year':year})
 
                         if p.regional_projections_input_path:
                             got_path = p.get_path(p.regional_projections_input_path)
@@ -1538,11 +1538,13 @@ def allocation_zones(p):
                 # This means the path has the extra cur_dir derived paths. Hack here to find the refpath and merge it with intermediate
                 replace_dict = {'<^year^>': str(p.years[0])}
                 regional_change_classes_path_pre2 = hb.replace_in_string_via_dict(got_path, replace_dict)
+                
+                regional_change_classes_path3 = p.get_path(regional_change_classes_path_pre2)
                     
-                if hb.path_exists(regional_change_classes_path1):
-                    regional_change_classes_path = regional_change_classes_path1
+                if hb.path_exists(regional_change_classes_path3):
+                    regional_change_classes_path = regional_change_classes_path3
                 else:
-                    split = regional_change_classes_path1.split(os.path.split(p.cur_dir)[1])[1].replace('\\', '/')[1:]
+                    split = regional_change_classes_path3.split(os.path.split(p.cur_dir)[1])[1].replace('\\', '/')[1:]
                     regional_change_classes_path = os.path.join(p.intermediate_dir, split)                            
                 # split = regional_change_classes_path1.split(os.path.split(p.cur_dir)[1])[1].replace('\\', '/')[1:]
                 # regional_change_classes_path = os.path.join(p.intermediate_dir, split)                        
