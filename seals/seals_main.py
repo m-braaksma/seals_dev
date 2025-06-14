@@ -1576,8 +1576,10 @@ def allocation_zones(p):
             blocks_lists_already_exist = False
 
 
-        disable_precached_block_lists = True
+        disable_precached_block_lists = True # This is surprisingly hard to chagne for speedups because ie if you do disable, it will then niavely run on ocean blocks.
+        
         if blocks_lists_already_exist and not disable_precached_block_lists:
+            hb.log('Using precached block lists. This is much faster than recalculating them, BUT, if you change the AOI, processing resolution, or any of the block list parameters, you will need to delete the existing block lists files in order to recalculate them.')
             fine_blocks_list = list(hb.file_to_python_object(os.path.join(p.cur_dir, 'fine_blocks_list.csv'), '2d_list'))
             coarse_blocks_list = list(hb.file_to_python_object(os.path.join(p.cur_dir, 'coarse_blocks_list.csv'), '2d_list'))
             processing_blocks_list = list(hb.file_to_python_object(os.path.join(p.cur_dir, 'processing_blocks_list.csv'), '2d_list'))
@@ -1702,7 +1704,7 @@ def allocation_zones(p):
                 hb.python_object_to_csv(block_list, os.path.join(p.cur_dir, block_name + '.csv'), '2d_list')
 
         else:
-            raise NameError('should not get here.')
+            hb.log('Using precached block lists from ' + str(p.combined_block_lists_paths))
 
         hb.log('Length of iterator after removing non-changing zones:', len(fine_blocks_list))
 
@@ -2478,18 +2480,11 @@ def stitched_lulc_simplified_scenarios(p):
 
                             hb.timer('end clip')
 
-                    if True:
-                    # if p.write_global_lulc_overviews_and_tifs:
-                        if p.aoi == 'global':
-                            # Removed because now making it into a pog below
-                            # hb.make_path_global_pyramid(p.lulc_projected_stitched_path)
-                            pass
-
         for file_path in vrt_paths_to_remove:
             hb.remove_path(file_path)
         
         # Even with 256gb memory, running 30 parallel pogers at once hits a ZSTD-related compression memory error.
-        hb.make_paths_pogs_in_parallel(p.cur_dir, exclude_strings='2025', max_workers=16, dont_actually_do_it=False, verbose=True)
+        hb.make_paths_pogs_in_parallel(p.cur_dir, exclude_strings='2025', max_workers=16, dont_actually_do_it=False, verbose=True, verbose_pog_check=True)
 
 def luh_seals_baseline_adjustment(p):
     # SHORTCUT, this should have been put in GTAP project but i'm racing.
