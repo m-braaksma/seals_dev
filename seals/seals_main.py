@@ -2359,6 +2359,8 @@ def stitched_lulc_simplified_scenarios(p):
             seals_utils.assign_df_row_to_object_attributes(p, row)
             hb.log('Stitching for scenario ' + str(index) + ' of ' + str(len(p.scenarios_df)))
 
+            current_force_to_global_bb = 0
+            
             if p.scenario_type != 'baseline':
                 for year in p.years:
 
